@@ -1,0 +1,13 @@
+# Educational lane  v1.0  (2026-09-21)
+# This folder had NO .gitignore. v3.0's does not reach here - nested
+# .gitignore files only cover their own subtree.
+# fonts/ is deliberately TRACKED: v3.0/reel_config.py imports from it.
+.venv/
+__pycache__/
+_logs/
+_state/
+_Template Kit/
+proof/
+.DS_Store
+*.bak*
+com.selene.edu.plist

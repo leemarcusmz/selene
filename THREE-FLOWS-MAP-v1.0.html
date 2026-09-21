@@ -1,0 +1,385 @@
+<!DOCTYPE html><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Selene Three Flows Map",
+  "schemaVersion": 1,
+  "description": "Selene Dreams — Three Flows, One Map v1.0 (Sep 11 2026): the image lane (v16), the educational carousel lane (v8) and the trial-reel autopilot drawn side by side. Layman icon view, where they already share pieces, where they could but don't, per-lane pros and cons, and the one-stop-hub options for replacing the weekly email link. Understanding only — nothing was changed.",
+  "mcpTools": [],
+  "mcpServerNames": []
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selene Dreams — Three Flows, One Map v1.0</title>
+<style>
+  :root{--bg:#F5F3EF;--ink:#273F22;--soft:#6f7768;--line:#ded9cc;--card:#fff;
+    --auto:#5f6d54;--auto-bg:#edf0ea;--auto-line:#c9d2c0;
+    --agent:#335875;--agent-bg:#e9f0f7;--agent-line:#b0ceec;
+    --you:#b8552f;--you-bg:#fdeee4;--you-line:#f7d4bd;
+    --gate:#273F22;--gate-bg:#eeeee3;--gate-line:#d3d2bd;
+    --mem:#7a6d45;--mem-bg:#E8E4D8;--mem-line:#cfc5a4;
+    --live:#3d6b34;--warn:#FF6F55;--learn:#b5714e;--new:#335875;
+    --img:#5f6d54;--edu:#335875;--reel:#7a5a8a;--reel-bg:#f0eaf5;--reel-line:#d3c3e0;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Avenir Next','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:34px 16px 56px;display:flex;justify-content:center}
+  .wrap{max-width:860px;width:100%}
+  h1{font-size:22px;font-weight:600;text-align:center;letter-spacing:.2px;text-wrap:balance}
+  .sub{text-align:center;color:var(--soft);font-size:12.5px;margin:6px auto 18px;max-width:700px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px}
+  .legend div{font-size:10.5px;padding:4px 11px;border-radius:20px;border:1.5px solid}
+  .l-auto{color:var(--auto);border-color:var(--auto-line);background:var(--auto-bg)}
+  .l-agent{color:var(--agent);border-color:var(--agent-line);background:var(--agent-bg)}
+  .l-you{color:var(--you);border-color:var(--you-line);background:var(--you-bg)}
+  .l-gate{color:var(--gate);border-color:var(--gate-line);background:var(--gate-bg)}
+  .l-mem{color:var(--mem);border-color:var(--mem-line);background:var(--mem-bg)}
+  .l-reel{color:var(--reel);border-color:var(--reel-line);background:var(--reel-bg)}
+  .l-new{color:var(--new);border-color:#b0ceec;background:#eaf2fa}
+  .l-gap{color:#c2492f;border-color:var(--warn);background:#fff7f4;border-style:dashed}
+  .group{border-radius:15px;padding:17px;border:2px solid;position:relative;margin-top:14px}
+  .g-auto{background:var(--auto-bg);border-color:var(--auto-line)}
+  .g-agent{background:var(--agent-bg);border-color:var(--agent)}
+  .g-you{background:var(--you-bg);border-color:var(--you-line)}
+  .g-gate{background:var(--gate-bg);border-color:var(--gate-line)}
+  .g-mem{background:var(--mem-bg);border-color:var(--mem-line);border-style:dashed}
+  .g-reel{background:var(--reel-bg);border-color:var(--reel-line)}
+  .gtitle{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:3px}
+  .gtitle h2{font-size:14.5px;font-weight:700}
+  .gtag{font-size:9.5px;font-weight:800;letter-spacing:1px;padding:3px 9px;border-radius:20px;color:#fff}
+  .t-auto{background:var(--auto)}.t-agent{background:var(--agent)}.t-you{background:var(--you)}.t-gate{background:var(--gate)}.t-mem{background:var(--mem)}.t-reel{background:var(--reel)}
+  .gwhen{font-size:10.5px;color:var(--soft);font-style:italic;margin-left:auto}
+  .live{font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#fff;background:var(--live);border-radius:12px;padding:2px 7px;vertical-align:2px}
+  .todo{font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#c2492f;border:1.5px solid var(--warn);border-radius:12px;padding:1px 6px;background:#fff}
+  .learn{font-size:8.5px;font-weight:800;color:#fff;background:var(--learn);border-radius:12px;padding:2px 7px;vertical-align:1px}
+  .newb{font-size:8.5px;font-weight:800;color:#fff;background:var(--new);border-radius:12px;padding:2px 7px;vertical-align:1px}
+  .unsure{font-size:8.5px;font-weight:800;letter-spacing:.5px;color:var(--mem);border:1.5px solid var(--mem-line);border-radius:12px;padding:1px 6px;background:#fff}
+  .blocker{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:9px 13px;margin-top:7px;font-size:12.3px;line-height:1.55}
+  .blocker b{font-weight:650}
+  .blocker code{background:#f1efe8;border-radius:4px;padding:1px 5px;font-size:10.5px}
+  .blocker .fixby{display:block;margin-top:4px;color:var(--auto);font-size:11.4px}
+  .blocker.decide{border-left-color:var(--agent)}
+  .blocker.decide .fixby{color:var(--agent)}
+  .lanes{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .lane{flex:1;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.5}
+  .lane b{font-weight:650}
+  .lane.pro{border-top:3px solid var(--live)}
+  .lane.con{border-top:3px solid var(--warn)}
+  .lane ul{padding-left:16px;margin-top:3px}
+  .lane li{margin:2px 0}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px;margin-top:7px;font-size:12.3px;line-height:1.55}
+  .step b{font-weight:650}
+  .step code{background:#f1efe8;border-radius:4px;padding:1px 5px;font-size:10.5px}
+  .step.newstep{border:1.5px solid var(--new);background:#f2f8fd}
+  .step.youstep{border:1.5px solid var(--you-line);background:var(--you-bg)}
+  .step .n{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:var(--gate);color:#fff;font-size:10.5px;font-weight:800;text-align:center;line-height:20px;margin-right:6px}
+  .step.youstep .n{background:var(--you)}
+  .handoff{display:flex;flex-direction:column;align-items:center;padding:7px 0}
+  .handoff .line{width:2px;height:9px;background:#d2ccbe}
+  .handoff .chip{font-size:10.5px;background:#fff;border:1.5px dashed #ccc4b4;color:#7a7166;border-radius:8px;padding:4px 11px;margin:3px 0;text-align:center;line-height:1.5}
+  .handoff .tip{color:#ccc4b4;font-size:13px;line-height:9px}
+  .foot{margin-top:22px;font-size:11.5px;color:var(--soft);text-align:center;line-height:1.7}
+  .simple{background:var(--card);border:2px solid var(--gate-line);border-radius:15px;padding:18px 16px 14px;margin-bottom:14px}
+  .simple h2{font-size:13px;font-weight:700;text-align:center;margin-bottom:4px;letter-spacing:.3px}
+  .simple .hint{text-align:center;font-size:10.5px;color:var(--soft);margin-bottom:12px}
+  .flow{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:4px}
+  .fstep{flex:1 1 100px;min-width:96px;max-width:132px;border-radius:10px;padding:8px 6px;text-align:center;font-size:10.5px;line-height:1.45;border:1.5px solid var(--auto-line);background:var(--auto-bg);color:var(--auto)}
+  .fstep b{display:block;font-size:11.5px;color:var(--ink);margin-bottom:1px}
+  .fstep .fwhen{display:block;font-size:9px;color:var(--soft)}
+  .fstep.you{border-color:var(--you-line);background:var(--you-bg);color:var(--you)}
+  .fstep.you b{color:var(--you)}
+  .farrow{align-self:center;color:#ccc4b4;font-size:13px;padding:0 1px}
+  .floop{margin-top:9px;text-align:center;font-size:10px;color:var(--live);font-weight:600}
+  /* the three-row icon grid */
+  .gridwrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+  .grid{display:grid;grid-template-columns:86px repeat(7,minmax(88px,1fr));gap:5px;min-width:720px;align-items:stretch}
+  .gh{font-size:9px;font-weight:800;letter-spacing:1px;color:var(--soft);text-align:center;padding:4px 2px;align-self:end}
+  .gl{font-size:11px;font-weight:700;display:flex;flex-direction:column;justify-content:center;padding:6px 4px;line-height:1.3}
+  .gl small{font-weight:500;color:var(--soft);font-size:9.5px}
+  .gl.img{color:var(--img)}.gl.edu{color:var(--edu)}.gl.reel{color:var(--reel)}
+  .ic{border-radius:10px;padding:7px 5px;text-align:center;font-size:10px;line-height:1.35;border:1.5px solid var(--auto-line);background:var(--auto-bg);color:var(--auto);display:flex;flex-direction:column;justify-content:center;min-height:64px}
+  .ic .e{font-size:20px;line-height:1.15;display:block}
+  .ic b{display:block;color:var(--ink);font-size:10.5px;margin-top:1px}
+  .ic.you{border-color:var(--you-line);background:var(--you-bg);color:var(--you)}
+  .ic.you b{color:var(--you)}
+  .ic.none{border-style:dashed;background:transparent;color:var(--soft);border-color:#d8d2c4}
+  .ic.none b{color:var(--soft);font-weight:500}
+  .ic.shared{box-shadow:inset 0 0 0 2px var(--mem-line);background:var(--mem-bg);color:var(--mem)}
+  .ic.shared b{color:var(--mem)}
+  .ic.gap{border-color:var(--warn);border-style:dashed;background:#fff7f4;color:#c2492f}
+  .ic.gap b{color:#c2492f}
+  .gkey{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;font-size:10px;color:var(--soft)}
+  .gkey span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--auto-line);background:var(--auto-bg);display:inline-block}
+  .sw.you{border-color:var(--you-line);background:var(--you-bg)}
+  .sw.shared{box-shadow:inset 0 0 0 2px var(--mem-line);background:var(--mem-bg);border-color:transparent}
+  .sw.gap{border-color:var(--warn);border-style:dashed;background:#fff7f4}
+  .sw.none{border-style:dashed;background:transparent;border-color:#d8d2c4}
+  /* matrix */
+  .mwrap{overflow-x:auto;margin-top:8px}
+  table.matrix{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:11.5px;min-width:560px;overflow:hidden}
+  .matrix th{font-size:9.5px;letter-spacing:1px;font-weight:800;color:var(--soft);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:#faf9f6}
+  .matrix th.c{text-align:center}
+  .matrix td{padding:7px 10px;border-bottom:1px solid #eeebe3;vertical-align:top;line-height:1.45}
+  .matrix tr:last-child td{border-bottom:0}
+  .matrix td.c{text-align:center;font-size:14px;width:64px}
+  .matrix td b{font-weight:650}
+  .matrix td i{font-style:normal;color:var(--soft);font-size:10.8px;display:block}
+  .matrix th.img{color:var(--img)}.matrix th.edu{color:var(--edu)}.matrix th.reel{color:var(--reel)}
+  /* hub options */
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-top:8px}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:11.8px;line-height:1.5}
+  .opt h3{font-size:12.5px;font-weight:700;margin-bottom:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .opt .verdict{font-size:8.5px;font-weight:800;letter-spacing:.6px;border-radius:12px;padding:2px 7px;color:#fff}
+  .v-rec{background:var(--live)}.v-later{background:var(--agent)}.v-no{background:#9a6a5a}
+  .opt.rec{border:1.5px solid var(--live);background:#f3f7f1}
+  .opt p{margin-top:3px}
+  .opt .pc{color:var(--live);font-weight:600}
+  .opt .cc{color:#c2492f;font-weight:600}
+  @media(max-width:600px){.fstep{min-width:44%;max-width:none}.farrow{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Selene Dreams — Three Flows, One Map <span style="color:var(--new);font-weight:600">v1.0</span></h1>
+  <div class="sub">Sep 11, 2026 · the <b>image lane</b> (map v16), the <b>educational carousel</b> (map v8) and the <b>trial-reel autopilot</b> (never mapped until now) drawn side by side · where they already share pieces, where they could but don't · pros and cons of each · options for one place to run all three · <b>understanding only — nothing was changed</b> · all times HKT unless marked</div>
+
+  <div class="legend">
+    <div class="l-auto">⚙️ AUTOMATION</div>
+    <div class="l-agent">🤖 AGENT</div>
+    <div class="l-you">🧑 YOU / TEAM</div>
+    <div class="l-gate">✅ GATE</div>
+    <div class="l-mem">🧠 SHARED</div>
+    <div class="l-reel">🎬 REEL LANE</div>
+    <div class="l-gap">⛓️‍💥 MISSING LINK</div>
+    <div class="l-new">v1.0</div>
+  </div>
+
+  <!-- ====================== SIMPLE VIEW ====================== -->
+  <div class="simple">
+    <h2>THE THREE FLOWS, AT A GLANCE</h2>
+    <div class="hint">Read each row left to right. Same column = same kind of step. Gold = the same piece of software, used by more than one lane. Dashed red = a step that exists in one lane and is simply absent in another.</div>
+    <div class="gridwrap">
+    <div class="grid">
+      <div class="gh"></div>
+      <div class="gh">SOURCE</div><div class="gh">YOU CHOOSE</div><div class="gh">IT MAKES</div><div class="gh">IT CHECKS</div><div class="gh">YOU APPROVE</div><div class="gh">IT POSTS</div><div class="gh">IT LEARNS</div>
+
+      <div class="gl img">🖼️ Image posts<small>Tue + Sat · since Aug</small></div>
+      <div class="ic"><span class="e">🔭</span><b>Scrapes rivals</b>Sun night → Mon</div>
+      <div class="ic you"><span class="e">🧑</span><b>You pick</b>≤15 images · Mon email</div>
+      <div class="ic"><span class="e">🎨</span><b>AI images</b>+ caption, same day</div>
+      <div class="ic"><span class="e">🔍</span><b>QA score</b>+ brand review of caption</div>
+      <div class="ic you"><span class="e">✅</span><b>Review link</b>drop · reorder · cover</div>
+      <div class="ic shared"><span class="e">📱</span><b>Auto-posts</b>shop tags · Tue/Sat 9 PM NY</div>
+      <div class="ic"><span class="e">📈</span><b>Reads results</b>Sunday scrape</div>
+
+      <div class="gl edu">📚 Educational<small>Thu · built Sep 9</small></div>
+      <div class="ic you"><span class="e">💡</span><b>Your topics</b>Post Topic sheet</div>
+      <div class="ic you"><span class="e">🧑</span><b>You approve words</b>sheet cell D</div>
+      <div class="ic"><span class="e">🖋️</span><b>Writes + renders</b>7 slides, template kit</div>
+      <div class="ic gap"><span class="e">👀</span><b>No QA stage</b>pale-photo legibility open</div>
+      <div class="ic you"><span class="e">✅</span><b>Emailed strip</b>sheet cell K <i style="font-style:normal">(mail not yet set)</i></div>
+      <div class="ic shared"><span class="e">📱</span><b>Auto-posts</b>no tags · Thu 9 PM NY</div>
+      <div class="ic gap"><span class="e">📈</span><b>No readback</b>results never join a row</div>
+
+      <div class="gl reel">🎬 Trial reels<small>≤1/day · live Sep 9</small></div>
+      <div class="ic you"><span class="e">📤</span><b>You drop a video</b>Drive, named by product</div>
+      <div class="ic none"><span class="e">—</span><b>no picking</b>by design</div>
+      <div class="ic"><span class="e">🎬</span><b>Hook + caption</b>overlay · music · variants</div>
+      <div class="ic"><span class="e">🛡️</span><b>Safety gates</b>parks if unsure or too wild</div>
+      <div class="ic none"><span class="e">—</span><b>no approval</b>by your choice</div>
+      <div class="ic"><span class="e">🧪</span><b>Trial reel</b>strangers only · you graduate</div>
+      <div class="ic gap"><span class="e">📈</span><b>No readback</b>views column is blank</div>
+    </div>
+    </div>
+    <div class="gkey">
+      <span><i class="sw"></i> runs itself</span>
+      <span><i class="sw you"></i> you</span>
+      <span><i class="sw shared"></i> same software, shared</span>
+      <span><i class="sw gap"></i> exists elsewhere, missing here</span>
+      <span><i class="sw none"></i> deliberately absent</span>
+    </div>
+    <div class="floop">⟲ your hands touch: pick (Mon) · approve posts (link) · approve words (sheet) · approve look (email) · drop a video (Drive) · graduate a reel (IG app) — six places, four apps</div>
+  </div>
+
+  <!-- ====================== WHERE THEY MEET ====================== -->
+  <div class="group g-mem">
+    <div class="gtitle"><h2>🧠 Where the three already meet — and where they don't</h2><span class="gtag t-mem">SHARED</span><span class="gwhen">as it runs today</span></div>
+    <div class="mwrap">
+    <table class="matrix">
+      <thead><tr><th>PIECE</th><th class="c img">🖼️ IMAGE</th><th class="c edu">📚 EDU</th><th class="c reel">🎬 REEL</th><th>WHAT IT MEANS</th></tr></thead>
+      <tbody>
+        <tr><td><b>Your Mac + “Start Selene AI”</b><i>server :5001 · edu server :5002 · ngrok tunnel · four launchd timers</i></td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td>One laptop is the single point of failure for all three. When it sleeps, every lane stops — and nothing tells you. <span class="todo">GAP</span></td></tr>
+        <tr><td><b>Claude CLI on the Mac</b><i><code>claude -p</code> for research, screening, prompts, writing, captions, vision</i></td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td>Same brain, same transcripts folder. A CLI or auth change hits all three at once.</td></tr>
+        <tr><td><b>Caption voice + rotation</b><i><code>caption_runner.validate_caption</code> · <code>caption-log.md</code> · the 7 styles</i></td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td>Deliberately shared. Styles rotate <b>across</b> lanes, so a Thursday carousel and a Friday reel don't open the same way. The best-designed intersection in the system.</td></tr>
+        <tr><td><b>Publisher + image host</b><i><code>publish_runner</code> · <code>image_host</code> metadata strip</i></td><td class="c">✅</td><td class="c">✅</td><td class="c">🟡</td><td>Edu imports the image lane's publisher read-only. Reels ship through their own video host and Graph calls (a reel is not a carousel). Each lane reads only its own sheet, so they cannot double-book — but they also cannot see each other.</td></tr>
+        <tr><td><b>Meta system-user token</b><i>never expires · catalog + shopping scopes</i></td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td>One credential. Rotating it means restarting the launcher for all three.</td></tr>
+        <tr><td><b>Drive OAuth token</b><i><code>token.json</code>, personal account, expires</i></td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td><td>Shared <b>failure</b>: one dead token silently stops generation, edu strips and reel intake together. It died Sep 8; re-auth fixed all three at once.</td></tr>
+        <tr><td><b>Google Sheets</b><i>Generation Queue · Edu Queue + Post Topic · Trial Reel</i></td><td class="c">🖼️</td><td class="c">📚</td><td class="c">🎬</td><td><b>Three separate sheets</b>, three tabs to check. Reels treat theirs as optional (a Sheets outage cannot stop a reel); the other two depend on theirs.</td></tr>
+        <tr><td><b>Product vocabulary</b><i>Drive “01. Product Photos” filenames</i></td><td class="c">🟡</td><td class="c">—</td><td class="c">✅</td><td>Both lanes read the same folder, but the reel lane has a working parser and the image lane has the “Cooling Blanket” bug that errors a row every time it's picked. Same source, two readers, one of them wrong. <span class="todo">GAP</span></td></tr>
+        <tr><td><b>Verified-claims file</b><i><code>prompts/claims_edu.md</code> — 340 TC, not 400 · 365-day guarantee, not nights</i></td><td class="c">—</td><td class="c">✅</td><td class="c">—</td><td>Only the edu writer checks copy against it. Two live reel captions already asserted unverified material facts; image captions get a brand review but not this file. <span class="todo">GAP</span></td></tr>
+        <tr><td><b>Memory repo</b><i>selene-ig-memory on GitHub</i></td><td class="c">✅</td><td class="c">🟡</td><td class="c">🟡</td><td>Image lane reads and writes everything. Edu clones it for hashtag evidence. Reel's hook bank was mined from its research archive once. Learnings do not flow back from edu or reels.</td></tr>
+        <tr><td><b>Notifications</b><i>what reaches your inbox</i></td><td class="c">📧</td><td class="c">⛔</td><td class="c">—</td><td>Image lane: Apps Script mails you (posts ready, publish failed, Monday invite). Edu: SMTP from the Mac, <b>app password never set</b>, so the “emailed strip” has never been emailed. Reels: nothing, by design. <b>Three different mail paths, one of them dead.</b> <span class="todo">GAP</span></td></tr>
+        <tr><td><b>Review surface</b><i>where you say yes</i></td><td class="c">🌐</td><td class="c">📊</td><td class="c">📱</td><td>Web page (<code>?view=review</code>) · sheet cells D and K · Instagram app (graduate). The <b>one-stop</b> problem, in one row.</td></tr>
+        <tr><td><b>Calendar / slot allocation</b><i>who owns which day</i></td><td class="c">🟡</td><td class="c">🟡</td><td class="c">—</td><td>Tue/Sat vs Thu is a convention, not a rule any code enforces. Review page v2.0 draws a calendar from both sheets (deploy unconfirmed); its RE/TR feed needs a <code>/calendar</code> endpoint that does not exist yet. Image-lane dates have already drifted to near-daily. <span class="todo">GAP</span></td></tr>
+        <tr><td><b>Results readback</b><i>likes, saves, views back to the row that made them</i></td><td class="c">✅</td><td class="c">—</td><td class="c">—</td><td>Only image rows get outcomes (Sunday scrape joins col O). Edu permalinks live in another sheet, so the scrape can see the post but never joins it. Trial reels are invisible to a profile scrape entirely. <b>Two of three lanes are flying blind.</b> <span class="todo">GAP</span></td></tr>
+        <tr><td><b>Dashboard + watchdog</b><i><code>?view=status</code> · Monday watchdog</i></td><td class="c">✅</td><td class="c">—</td><td class="c">—</td><td>Status page reads the image lane's state file only. The watchdog checks only that research landed. Neither knows the other two lanes exist.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="step" style="margin-top:10px"><b>Reading it:</b> the <b>bottom</b> half of the system (voice, publisher, token, brain, laptop) is already one system. The <b>top</b> half — where you look, approve, get told, and see results — is three. That is exactly the half you feel every week.</div>
+  </div>
+
+  <!-- ====================== LANE 1 ====================== -->
+  <div class="group g-auto">
+    <div class="gtitle"><h2>🖼️ Lane 1 · Image posts</h2><span class="gtag t-auto">AUTOMATION + TEAM</span><span class="live">LIVE since Aug 25</span><span class="gwhen">Tue + Sat · 21:00 New York · map v16</span></div>
+    <div class="step"><span class="n">1</span><b>Sunday scrape + Monday research</b> — Apify pulls 6 tracked brands + your own account (45-day window) Sun 11 PM; at Mon 10 AM the research agent ranks by engagement rate, screens against <code>brand-guide.md</code>, publishes 18–25 candidates. ~55 min, four phases, critic pass on Opus.</div>
+    <div class="step"><span class="n">2</span><b>Visual screening</b> — Claude looks at every candidate image against the 12-point rubric; 8–12 survive; every slide archived because IG links die within days; thin weeks topped up from earlier high scorers, never padded.</div>
+    <div class="step youstep"><span class="n">3</span><b>You (or Charles) pick</b> — Monday invite email → <b>Selene Picks</b> page → click individual images, up to 15 a week, ≤5 per post; first submit locks the week; overflow shelves to next week. Week of Sep 7 is picked (rows #30–35).</div>
+    <div class="step"><span class="n">4</span><b>Prompts → images → QA → caption, no flips</b> — prompt runner writes one prompt per image and sets D=Ready itself; generation runs 1–4 min per row (Google's model, capacity retries); QA scores against the same rubric; caption fires the moment images finish (7-style register, brand-review pass, dashes banned).</div>
+    <div class="step youstep"><span class="n">5</span><b>You approve on the review link</b> — every post drawn as a real IG post; drop, reorder, pick cover, edit caption, reroll one slide. Approve writes Scheduled + a date. Emails every 30 min: posts ready · publish failed. <b>This is the “weekly email link”.</b></div>
+    <div class="step"><span class="n">6</span><b>Auto-publish with shop tags</b> — launchd pokes <code>/publish</code> every 15 min; slides resized, AI-provenance metadata stripped (no “AI info” label, proven), hosted, posted as a carousel, product tag on every slide from the Shopify catalog (fail-open), live URL written to col O.</div>
+    <div class="step"><span class="n">7</span><b>It learns</b> — Sunday scrape reads your own posts, joins them to the row via col O → <code>post-outcomes.csv</code>, <code>generation-scores.csv</code>, prompt playbook, visual taste. The only lane with a closed loop.</div>
+    <div class="lanes">
+      <div class="lane pro"><b>Strong</b><ul>
+        <li>Fully closed loop: research → pick → make → approve → post → results → next week.</li>
+        <li>Two human gates placed where they can answer the question (after the post exists).</li>
+        <li>Shoppable, no AI label, cancel-until-it-fires, review page you can use on a phone.</li>
+        <li>Most mature: 16 map versions, every failure so far has a fix or a documented recovery.</li>
+      </ul></div>
+      <div class="lane con"><b>Weak / open</b><ul>
+        <li><b>Server down = silently missed slots.</b> Happened twice (Aug 26–29, Sep 1–4). The email watchdog only sees J=Hold; it cannot see a dead server.</li>
+        <li>Cadence drift: rows approved Aug 31 got near-daily dates, not Tue/Sat.</li>
+        <li>“Cooling Blanket” / “Gauze Blanket” errors a row every time one is picked (fix known, not applied).</li>
+        <li>Generation ERROR rows do not email you; <code>pipeline-state.json</code> loses entries when six rows fire together, so the dashboard under-reports.</li>
+        <li>Drive OAuth token expires (likely a 7-day “Testing” consent screen — unverified); dead token = generation just stops.</li>
+        <li>Picker v4.0.b and review v2.0 written; whether both are pasted + deployed is unconfirmed.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- ====================== LANE 2 ====================== -->
+  <div class="group g-agent">
+    <div class="gtitle"><h2>📚 Lane 2 · Educational carousel</h2><span class="gtag t-agent">🤖 AGENT · own server :5002</span><span class="live">BUILT Sep 9</span><span class="gwhen">Thu · 21:00 New York · map v8</span></div>
+    <div class="step youstep"><span class="n">1</span><b>You feed topics</b> — the Post Topic sheet: your ideas plus suggestions (10 types incl. Real Moments; brand-history content banned outright). Setting a topic to <b>Approved</b> is pool maintenance, not a per-post decision.</div>
+    <div class="step"><span class="n">2</span><b>Writer drafts the slides</b> — every 15 min the tick finds Approved topics with empty slide cells; <code>claude -p</code> writes “Title | description” for 7 slides, caps measured against the renderer, two rewrite rounds then FLAGGED; checks copy against <code>claims_edu.md</code> (340 TC, 365-day guarantee, GOTS unconfirmed). Plan builder creates the queue row, D=Drafted.</div>
+    <div class="step youstep"><span class="n">3</span><b>Gate 1 — you approve the words</b> — flip <b>D=Approved</b> in the edu sheet's Generation Status tab. That is the only signal; there is no page for it.</div>
+    <div class="step"><span class="n">4</span><b>Render + caption</b> — Pillow renders from the template kit (two archetypes: taught / shown, never mixed; EK Roumald + Inter; cover rotation; no outro). Caption routes by type (Care Note · The Detail · Two Beat · One Line), reusing the image lane's validator and rotation log.</div>
+    <div class="step youstep"><span class="n">5</span><b>Gate 2 — you approve the look</b> — a strip JPG goes to the Drive Row folder and is meant to be <b>emailed</b>; then you flip <b>K=Approved</b> in the sheet. <span class="todo">MAIL APP PASSWORD NOT SET</span> — the strip saves, the email never sends, so today this gate means “open Drive, then edit a cell”.</div>
+    <div class="step"><span class="n">6</span><b>Thursday publish</b> — next free Thursday from its own sheet; hosts under <code>posts/edu/</code>; Meta carousel, <b>no product tags</b> (shop pointer is “selenedreams.com” once in the body); permalink written to the queue and back to the Post Topic row.</div>
+    <div class="step"><span class="n">7</span><b>It learns — not yet</b> — saves/shares were the intended signal; the Meta insights scope is unverified and nothing joins outcomes to a row.</div>
+    <div class="lanes">
+      <div class="lane pro"><b>Strong</b><ul>
+        <li>Best copy discipline in the system: verified-claims file, banned brand-history rule, measured caps, no dash punctuation.</li>
+        <li>Two gates where they belong: words before rendering, look before posting.</li>
+        <li>Separate server, venv and sheet — an edu bug cannot take the image lane down (your explicit requirement).</li>
+        <li>Reuses the publisher, host and caption validator instead of copying them.</li>
+      </ul></div>
+      <div class="lane con"><b>Weak / open</b><ul>
+        <li><b>No end-to-end post yet</b> as of Sep 9 (#10/#11 are the test). Whether one has landed since is unverified. <span class="unsure">UNSURE</span></li>
+        <li>Both approvals are sheet cells; the emailed strip has never been emailed (password unset).</li>
+        <li>No QA stage: pale-photo legibility is open; the fix already exists in the reel lane's <code>hook_overlay.py</code> and was never back-ported.</li>
+        <li>Thursday chosen on benchmarks, not your data; no outcomes readback to ever correct it.</li>
+        <li>Same silent-server risk as Lane 1, plus a second process to remember to restart.</li>
+        <li>Real Moments guide wording and the Topic Type dropdown are still on your list.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- ====================== LANE 3 ====================== -->
+  <div class="group g-reel">
+    <div class="gtitle"><h2>🎬 Lane 3 · Trial-reel autopilot</h2><span class="gtag t-reel">🎬 AUTOPILOT · no approval</span><span class="live">LIVE Sep 9–10</span><span class="gwhen">≤1/day · min 40 h apart · 10:00–21:00 HKT · never mapped before</span></div>
+    <div class="step youstep"><span class="n">1</span><b>You drop a video in Drive</b> — “05. Video Reel / 01. Video Content”, filename carries the product (<code>Gauze_Blanket_sofa-shake.MP4</code>). From your phone, from anywhere. That is the entire human input.</div>
+    <div class="step"><span class="n">2</span><b>Intake + vision</b> — every 15 min the lane syncs the folder, dedupes by file id, pulls 6 frames, and Claude describes the clip: product (or honestly <b>unclear</b>), on-screen text, mood. Silence is measured, not assumed.</div>
+    <div class="step"><span class="n">3</span><b>Hook + caption</b> — hook patterns from the hook bank (rejects numbers, questions, dashes; can self-flag “not truthful” → parks). Caption routes to One Line · Two Beat · Meet the Product (only when the product is confirmed), validated by the shared validator; two failures park the video. Unclear product → product nouns banned from hashtags.</div>
+    <div class="step"><span class="n">4</span><b>Your per-video rule, from the Videos tab</b> — no on-screen text → burn the hook in (Pillow, legibility-scored scrim); text already there → never. Silent → licensed track from “02. Audio Content” (folder is empty today, so reels go out silent); audio present → untouched. Sheet unreadable → detection decides, reel still ships.</div>
+    <div class="step"><span class="n">5</span><b>Publish as a TRIAL reel</b> — shown to non-followers only; cadence gates plus a 35% random skip so it never posts on a machine rhythm. Row mirrored to the Trial Reel sheet; state lives in <code>reels.json</code>. One video = a parent for up to 3 runs with different hooks (14-day variant cooldown).</div>
+    <div class="step youstep"><span class="n">6</span><b>You graduate</b> — the only manual step, in the Instagram app, and deliberately so: auto-graduation would push a video you never chose to real followers. Product tags happen there too (the reels API has none).</div>
+    <div class="step"><span class="n">7</span><b>It learns — not yet</b> — <code>--variants</code> prints a blank views column on purpose so the gap is visible. The lane runs a clean experiment and cannot read the answer.</div>
+    <div class="lanes">
+      <div class="lane pro"><b>Strong</b><ul>
+        <li>Lowest-friction input of the three: name a file, done.</li>
+        <li>Honest about uncertainty end to end — an unclear product propagates to every downstream stage (learned the hard way from “#linenthrow”).</li>
+        <li>Fail-open everywhere: Sheets down, music missing, overlay failing — the reel still publishes.</li>
+        <li>Variants turn one clip into a hook experiment; cooldowns prevent spam.</li>
+      </ul></div>
+      <div class="lane con"><b>Weak / open</b><ul>
+        <li><b>No results readback</b> — the biggest gap; the experiment is unreadable.</li>
+        <li>Two live captions asserted unverified material facts (“lightweight cotton weave”). Hooks reject numbers; captions do not yet reject claims. The claims file exists one lane over.</li>
+        <li>Trial reels are a weak caption test: watch-through decides reach, the caption rides along (you accepted this).</li>
+        <li>Same silent-server and dead-Drive-token risks; nothing alerts you.</li>
+        <li>Music path never mixed a real file; six retired synthetic clips still sit in the drop folder.</li>
+        <li>No notification at all: you find out a reel went out by opening Instagram.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- ====================== COULD MEET ====================== -->
+  <div class="group g-gate" style="border-style:dashed;border-color:var(--warn)">
+    <div class="gtitle"><h2>⛓️‍💥 Where they could meet and don't — ranked</h2><span class="gtag t-gate">NOT BUILT</span><span class="gwhen">nothing here was changed · your call, later</span></div>
+    <div class="step" style="font-size:11.5px;color:var(--soft)">Ordered by how much weekly friction each removes, divided by how much it would take. Blue-edged = a design decision for you; orange-edged = a plain gap.</div>
+
+    <div class="blocker decide"><b>1 · One place to approve everything</b> <span class="todo">BIGGEST WIN</span><br>
+    Today: web page (image), two sheet cells (edu), Instagram app (reel). The review page v2.0 already draws a calendar from both sheets and has a Queue/Calendar layout built for phones. Adding an edu section (approve words · approve look, strip shown inline) and a read-only reel feed (what went out, what's parked and why, “graduate this” reminder) would make it the hub. Google-hosted, so it opens even when the Mac is asleep.
+    <span class="fixby">→ Extends what exists; no new hosting, no new login. See “One-stop hub” below for the alternatives.</span></div>
+
+    <div class="blocker"><b>2 · One down-detector for all three lanes</b> <span class="todo">SAFETY</span><br>
+    Every lane dies silently when the Mac sleeps; it has already cost the image lane two batches of missed slots. A single check that runs in Google's cloud (Apps Script time trigger → tunnel <code>/health</code> → email/push when it fails) covers all three at once, because they share the launcher.
+    <span class="fixby">→ One trigger, one email. The cheapest fix on this page.</span></div>
+
+    <div class="blocker"><b>3 · One inbox, one style of message</b> <span class="todo">GAP</span><br>
+    Image lane mails from Apps Script; edu wants to mail from the Mac (unset); reels never mail. Routing edu and reel events through the Apps Script mailer that already works would give you one sender, one subject pattern — and the edu strip email would finally arrive without an app password.
+    <span class="fixby">→ Or drop email as the entry point entirely and make it a notification pointing at the hub (item 1).</span></div>
+
+    <div class="blocker"><b>4 · One results table</b> <span class="todo">LEARNING</span><br>
+    Only image rows get outcomes. Edu posts are on the grid but never joined; trial reels are not on the grid at all, so the scrape cannot see them. A Meta insights read (permalink → likes/saves/shares/views) writing one <code>post-outcomes</code> table keyed by lane + row would close the loop for all three and finally test Thursday, the hooks, and the variants.
+    <span class="fixby">→ Needs the insights scope verified once. Reels: read by media id, not by scraping.</span></div>
+
+    <div class="blocker"><b>5 · One claims file</b> <span class="todo">BRAND RISK</span><br>
+    <code>claims_edu.md</code> holds the audited truth (340 TC, 365-day guarantee, GOTS unconfirmed, OEKO-TEX at facility level). Reel captions and image captions never see it, and reels have already stated unverified material facts twice.
+    <span class="fixby">→ Point the reel caption gate and the image brand-review pass at the same file. Small.</span></div>
+
+    <div class="blocker"><b>6 · One product parser</b> <span class="todo">KNOWN BUG</span><br>
+    <code>reel_products.py</code> reads “01. Product Photos” correctly; the image lane's lookup splits “Cooling Blanket” wrong and errors the row. Same folder, two readers.
+    <span class="fixby">→ Reuse the reel parser in the image lane. Already noted as the fix reference.</span></div>
+
+    <div class="blocker decide"><b>7 · One calendar that owns the days</b> <span class="todo">DECISION</span><br>
+    Tue/Sat vs Thu is a convention; each publisher reads only its own sheet; reels can land the same day as a carousel; image dates already drifted daily. A shared slot allocator (or just the hub calendar refusing double-bookings) would make the week legible.
+    <span class="fixby">→ Decide first whether reels should respect carousel days at all — they reach strangers, not followers.</span></div>
+
+    <div class="blocker"><b>8 · Back-port the legibility fix</b> <span class="todo">SMALL</span><br>
+    The reel overlay scores luminance and escalates the scrim; the edu renderer has no such check and pale photos are an open problem. Same Pillow, same brand.
+    <span class="fixby">→ Copy the logic across; no product change.</span></div>
+
+    <div class="blocker decide"><b>9 · One state file, one dashboard</b> <span class="todo">LATER</span><br>
+    <code>pipeline-state.json</code> (image), the edu log, <code>reels.json</code>. The status page reads only the first. A <code>/state</code> that merges all three would let one dashboard say “what is running, what is waiting on me, what failed” across lanes — which is what a hub needs underneath it.
+    <span class="fixby">→ Build after item 1 decides what the hub is; the state file follows the surface, not the other way round.</span></div>
+
+    <div class="blocker" style="border-left-color:var(--mem)"><b>Ideas I would not chase yet</b><br>
+    Hook bank → image caption openings (voice is already shared via rotation; adding hooks risks sameness) · reel frames as edu Real Moments photos (different aspect, different purpose) · Notion as the control surface (see below).</div>
+  </div>
+
+  <!-- ====================== HUB OPTIONS ====================== -->
+  <div class="group g-you">
+    <div class="gtitle"><h2>🧭 One-stop hub — replacing “the email with a link”</h2><span class="gtag t-you">FOR YOU</span><span class="gwhen">options, not a build</span></div>
+    <div class="step"><b>First, what is actually unreliable.</b> The review page itself is Google-hosted at a <b>fixed URL</b> that never changes; it works whether or not the Mac is awake (only live thumbnails and Mac-side actions need the tunnel). The fragile parts are: (a) the email as the <i>entry point</i> — it gets buried, arrives only on transitions, and edu's version never sends; (b) three surfaces instead of one; (c) nothing tells you when the machine behind them is down. A link is not the problem. Depending on the email to <i>find</i> the link is.</div>
+    <div class="opts">
+      <div class="opt rec"><h3>Pin the URL you already have <span class="verdict v-rec">DO TODAY</span></h3><p>Bookmark <code>…/exec?view=review</code> on phone home screen and browser bar. Zero build. Email becomes a nudge, not the door.</p><p class="pc">+ instant · permanent URL · nothing to deploy</p><p class="cc">− still three surfaces · no Mac-down warning</p></div>
+      <div class="opt rec"><h3>Grow the review page into the hub <span class="verdict v-rec">RECOMMENDED</span></h3><p>review.gs v2.0 already has Queue · Calendar · Needs-attention and reads the edu sheet. Add: edu approve-words / approve-look sections (strip shown inline), reel feed (read-only + graduate reminder), a “Mac last seen” line, push instead of email.</p><p class="pc">+ Google-hosted, opens with Mac asleep · same login as today · sheets stay the source of truth · calendar already half-built</p><p class="cc">− Apps Script limits (one router, paste-to-deploy, 6-min runs) · images via Drive thumbnails · reels need a <code>/calendar</code> endpoint that isn't built</p></div>
+      <div class="opt"><h3>Notion <span class="verdict v-no">NOT AS THE CONTROL</span></h3><p>Nice mobile app, but it would be a <i>mirror</i>: something must sync sheets → Notion and poll Notion → Mac for approvals. That is a fourth integration and a second source of truth, and it cannot draw a post as Instagram does.</p><p class="pc">+ pleasant to read · good for notes, the promo calendar, decisions log</p><p class="cc">− new sync to build and babysit · approvals lag by the poll interval · no IG-style preview · one more thing that breaks when the token expires</p></div>
+      <div class="opt"><h3>A page you refresh yourself <span class="verdict v-later">PARTLY YES</span></h3><p>Two flavours. (i) A Mac-served page through the tunnel: live, but dead exactly when you most need it. (ii) A static page on GitHub Pages fed by JSON the runners already push to the memory repo: survives the Mac being off, refreshable, no login — but <b>read-only</b>; approvals would still route through Apps Script or the tunnel.</p><p class="pc">+ (ii) is a good <i>status</i> screen and could show all three lanes</p><p class="cc">− not an approval surface on its own · public repo = careful what the JSON contains</p></div>
+      <div class="opt"><h3>Small cloud app (Cloud Run / VPS) <span class="verdict v-later">LATER, IF EVER</span></h3><p>The “proper” answer: one web app, own auth, reads the three sheets and the state, writes approvals, pings the Mac. Solves the UI half of the Mac problem, not the generation half — images and reels still render on the laptop.</p><p class="pc">+ no Apps Script limits · one codebase for all lanes</p><p class="cc">− biggest lift · new hosting, auth, secrets · the 24/7 laptop still has to exist</p></div>
+      <div class="opt"><h3>Cowork artifact (like the status map) <span class="verdict v-no">NO</span></h3><p>Snapshot only. Cannot read live sheets or take an approval. Fine for maps like this one, wrong for a control surface.</p></div>
+    </div>
+    <div class="step" style="margin-top:10px"><b>Recommendation, in order:</b> (1) pin the URL now · (2) the cloud down-detector, because every hub is useless if you can't tell the Mac is asleep · (3) grow review.gs into the hub, edu first (its approvals are already just cells), reels read-only · (4) push notifications from the same script instead of three mail paths · (5) the merged results table, so the hub can show outcomes next to approvals. Notion stays optional for notes; not for approvals.</div>
+    <div class="step" style="font-size:11.5px"><b>What I am unsure of:</b> whether review v2.0 / picker v4.0.b are deployed right now · whether an edu post has gone end to end since Sep 9 · whether the reel publisher shares any Graph code with <code>publish_runner</code> or is fully separate · whether the research agent actually writes suggestions into the Post Topic sheet or that is still a manual paste · whether you want reels to respect carousel days at all. None of these change the shape above; they change the order of the first two builds.</div>
+  </div>
+
+  <div class="foot">
+    Three lanes · one laptop · one voice · one publisher · three sheets · three approval surfaces · one closed loop out of three.<br>
+    Human touchpoints today: <b>pick images</b> (Mon, page) · <b>approve posts</b> (page) · <b>approve words</b> (sheet) · <b>approve look</b> (sheet, after Drive) · <b>drop a video</b> (Drive) · <b>graduate a reel</b> (IG app).<br>
+    v1.0 · Sep 11, 2026 · first unified map; drawn from map v16, map v8 and the trial-reel handoff (TRIAL-REELS-LANE.md v2.0). No pipeline, sheet, script or artifact was modified.<br>
+    ⚠️ Watch: the Mac staying awake (all three) · the Drive token (all three) · edu's first end-to-end post · unverified claims in reel captions · image-lane cadence drift.
+  </div>
+</div>
+</body>
+</html>

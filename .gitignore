@@ -1,0 +1,34 @@
+# =============================================================================
+# Selene repo root  v1.0  (2026-09-21)
+# Root is "AI Generation Flow" because the live code hard-wires SIBLING paths:
+#   educational/config_edu.py  -> ../selene-dreams-script-v3.0 (.env, creds, modules)
+#   v3.0/reel_config.py:257    -> ../selene-dreams-educational-v1.0/fonts
+#   v3.0/config.py:150         -> ../reference-images
+# Splitting these into separate repos breaks all three. Do not restructure
+# without changing those three files first.
+#
+# Only the two live lanes + the two loose runners are tracked. Everything
+# else at this level is media, docs or dead code and stays local.
+# =============================================================================
+
+# --- dead generations: contain live OAuth credentials, never commit ----------
+selene-dreams-script/
+selene-dreams-script-v2.0/
+selene-dreams-video-v1.0/
+
+# --- media + docs: large, binary, not needed to run --------------------------
+reference-images/
+_Design/
+_User Guide Kit/
+_archive/
+_knowledge-uploads/
+*.mp4
+*.pptx
+*.pdf
+
+# --- OS / tooling ------------------------------------------------------------
+.DS_Store
+.claude/
+__pycache__/
+.venv/
+*.bak*

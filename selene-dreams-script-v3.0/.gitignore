@@ -1,0 +1,21 @@
+# v3.0 lane  v1.1  (2026-09-21)
+# v1.2 adds token.json* and *.dead-* . THREE token.json.dead-* files (real
+# OAuth refresh tokens) staged cleanly under v1.1 because the old rule was the
+# exact string 'token.json'. Caught by a dry run, 21 Sep. Never narrow these.
+# v1.1 added .DS_Store, _to_delete/, _Hook Proofs/, _archive/.
+# Backup of the original: .gitignore.bak-20260921
+.env
+github_token.txt
+credentials.json
+oauth_credentials.json
+token.json*
+*.dead-*
+_logs/
+_research/
+_state/
+_to_delete/
+_Hook Proofs/
+_archive/
+__pycache__/
+.DS_Store
+*.bak*
