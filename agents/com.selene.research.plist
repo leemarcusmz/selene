@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- com.selene.research  v2.0  (2026-09-21)
+     v2.0: no secret in this file. Calls bin/poke.sh, which reads it from .env.
+           __HOME__ is rendered to the real home by deploy.sh at install time,
+           because launchd expands no variables itself.
+     v1.x: (MacBook era) curl with the secret baked into the body. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.selene.research</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string><string>-lc</string>
+    <string>__HOME__/runner/selene/bin/poke.sh research</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>10</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/selene-research.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/selene-research.log</string>
+</dict>
+</plist>

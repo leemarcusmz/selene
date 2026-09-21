@@ -32,3 +32,6 @@ _knowledge-uploads/
 __pycache__/
 .venv/
 *.bak*
+
+# --- cutover marker: created by hand on the runner at Phase 7, never committed ---
+LIVE
