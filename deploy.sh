@@ -1,6 +1,9 @@
 #!/bin/zsh
 # =============================================================================
-# deploy.sh  v1.0  (2026-09-21)
+# deploy.sh  v1.1  (2026-09-22)
+# v1.1: explicit /usr/local/bin/python3 (a bare ssh shell finds Apple CLT python
+#       first) and --only-binary=:all: - an unattended runner never compiles.
+#       Found when cryptography tried to build from source on Intel + 3.13.
 # Called by ~/runner/bin/deploy-all.sh on the runner after every change to the
 # production branch. Must be idempotent: running it twice changes nothing.
 #
@@ -19,7 +22,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 say(){ echo "$(date '+%F %T') selene: $*"; }
 
 say "deps"
-python3 -m pip install -q --user -r "$ROOT/selene-dreams-script-v3.0/requirements.txt" \
+/usr/local/bin/python3 -m pip install -q --user --only-binary=:all: -r "$ROOT/selene-dreams-script-v3.0/requirements.txt" \
   || { say "pip install FAILED"; exit 1; }
 
 say "agents"
