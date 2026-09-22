@@ -2,8 +2,14 @@
 # Selene Dreams — Image Generation Script v3.0
 # config.py — Credentials and Settings
 # =============================================================================
-# IMPORTANT: Never share this file or commit it to version control.
-# Keep it in your local selene-dreams-script-v3.0 folder only.
+# Holds no secrets since 2026-08-19 (they live in .env) and IS committed.
+#
+# CHANGELOG
+#   2026-09-22  .env.local overlay + export of the two SELENE_* path keys to
+#               os.environ. reel_config.py and caption_runner.py read those
+#               via os.environ, which the private _ENV dict never reached, so
+#               setting them in .env silently did nothing. .env.local is
+#               machine-specific (runner paths), gitignored, never encrypted.
 # =============================================================================
 
 import os
@@ -16,19 +22,29 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # One file to rotate, one file to protect. Values were previously hardcoded
 # here and quoted in prompts/logs; those copies are scrubbed. github_token.txt
 # stays separate (seven scripts read it directly).
+# Machine-specific values (content paths on the runner) go in .env.local, which
+# overlays .env and is never committed or encrypted. Only these two keys are
+# exported to os.environ, because reel_config.py / caption_runner.py read them
+# there; secrets stay in the private dict.
+_EXPORTED_KEYS = ("SELENE_CONTENT_DIR", "SELENE_CAPTION_LOG")
+
 def _load_env():
     env = {}
-    path = os.path.join(BASE_DIR, ".env")
-    try:
-        with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, _, v = line.partition("=")
-                env[k.strip()] = v.split("#")[0].strip() if " #" in v else v.strip()
-    except FileNotFoundError:
-        pass
+    for name in (".env", ".env.local"):
+        path = os.path.join(BASE_DIR, name)
+        try:
+            with open(path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, _, v = line.partition("=")
+                    env[k.strip()] = v.split("#")[0].strip() if " #" in v else v.strip()
+        except FileNotFoundError:
+            pass
+    for k in _EXPORTED_KEYS:
+        if env.get(k):
+            os.environ.setdefault(k, env[k])
     return env
 
 _ENV = _load_env()

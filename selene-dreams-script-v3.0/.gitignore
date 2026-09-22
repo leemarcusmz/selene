@@ -5,6 +5,7 @@
 # v1.1 added .DS_Store, _to_delete/, _Hook Proofs/, _archive/.
 # Backup of the original: .gitignore.bak-20260921
 .env
+.env.local
 github_token.txt
 credentials.json
 oauth_credentials.json
