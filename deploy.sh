@@ -1,6 +1,9 @@
 #!/bin/zsh
 # =============================================================================
-# deploy.sh  v1.1  (2026-09-22)
+# deploy.sh  v1.2  (2026-09-22)
+# v1.2: decrypt selene-dreams-script-v3.0/.env.age beside itself. The shared
+#       runner only decrypts a root-level .env.age; Selene's .env lives one
+#       level down where config.py and config_edu.py read it.
 # v1.1: explicit /usr/local/bin/python3 (a bare ssh shell finds Apple CLT python
 #       first) and --only-binary=:all: - an unattended runner never compiles.
 #       Found when cryptography tried to build from source on Intel + 3.13.
@@ -24,6 +27,15 @@ say(){ echo "$(date '+%F %T') selene: $*"; }
 say "deps"
 /usr/local/bin/python3 -m pip install -q --user --only-binary=:all: -r "$ROOT/selene-dreams-script-v3.0/requirements.txt" \
   || { say "pip install FAILED"; exit 1; }
+
+say "secrets"
+V3="$ROOT/selene-dreams-script-v3.0"
+if [ -f "$V3/.env.age" ]; then
+  age -d -i "$HOME/runner/keys/runner.age" -o "$V3/.env" "$V3/.env.age" && chmod 600 "$V3/.env" \
+    || { say "age decrypt FAILED"; exit 1; }
+else
+  say "no .env.age yet - skipping"
+fi
 
 say "agents"
 mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
