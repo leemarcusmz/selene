@@ -1,0 +1,11 @@
+# selene-edu.service  v1.0  (2026-09-23)
+# One poke. bin/poke.sh is inert without LIVE, so this is safe on any machine.
+[Unit]
+Description=Selene poke: edu
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/runner/selene/bin/poke.sh edu
+StandardOutput=append:%h/runner/logs/selene-edu.log
+StandardError=inherit

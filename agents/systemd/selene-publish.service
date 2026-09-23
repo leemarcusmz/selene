@@ -1,0 +1,11 @@
+# selene-publish.service  v1.0  (2026-09-23)
+# One poke. bin/poke.sh is inert without LIVE, so this is safe on any machine.
+[Unit]
+Description=Selene poke: publish
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/runner/selene/bin/poke.sh publish
+StandardOutput=append:%h/runner/logs/selene-publish.log
+StandardError=inherit

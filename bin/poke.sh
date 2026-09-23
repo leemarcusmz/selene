@@ -1,18 +1,21 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # =============================================================================
-# bin/poke.sh  v1.0  (2026-09-21)
-# One script behind all four poke agents. Reads WEBHOOK_SECRET from the v3.0
-# .env at run time, so no plist ever carries a secret again (p2e).
+# bin/poke.sh  v1.1  (2026-09-23)
+# v1.1: bash shebang so the same file runs under launchd (Mac) and systemd
+#       (droplet). ~/.local/bin on PATH. Logic unchanged.
+# v1.0: (2026-09-21) one script behind all four poke agents.
+# Reads WEBHOOK_SECRET from the v3.0 .env at run time, so no scheduler file
+# ever carries a secret.
 #
 # LIVE GATE: does nothing until a file named LIVE exists at the repo root.
-# That file is created by hand at cutover (Phase 7) and is gitignored, so a
-# fresh clone on any machine is inert until someone decides otherwise. This is
-# the guard against two machines publishing at once.
+# That file is created by hand at cutover and is gitignored, so a fresh clone
+# on any machine is inert until someone decides otherwise. This is the guard
+# against two machines publishing at once.
 #
 # Usage: poke.sh publish | reel | research | edu
 # =============================================================================
 set -u
-export PATH="/usr/local/bin:$PATH"
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENV="$ROOT/selene-dreams-script-v3.0/.env"
 LANE="${1:?usage: poke.sh publish|reel|research|edu}"
@@ -33,7 +36,7 @@ case "$LANE" in
   *) echo "poke.sh: unknown lane '$LANE'" >&2; exit 2 ;;
 esac
 
-# -m 840: always finish inside the 900s StartInterval so pokes never overlap.
+# -m 840: always finish inside the 900s interval so pokes never overlap.
 exec /usr/bin/curl -s -m 840 -X POST \
   -H 'Content-Type: application/json' \
   -d "{\"secret\":\"$SECRET\"}" "$URL"

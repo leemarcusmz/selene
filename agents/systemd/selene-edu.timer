@@ -1,0 +1,13 @@
+# selene-edu.timer  v1.0  (2026-09-23)
+# Port of com.selene.edu.plist (StartInterval 900). Boot offsets are
+# staggered per lane so the three 15-minute pokes do not land together.
+[Unit]
+Description=Selene poke timer: edu every 15 min
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
