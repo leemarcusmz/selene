@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy.sh  v2.0  (2026-09-23)
+# deploy.sh  v2.0.1  (2026-09-23)
+# v2.0.1: the educational SERVER unit is selene-edu-server.service. v2.0 named
+#         it selene-edu.service, which collided with the edu *poke* unit of the
+#         same name - the poke won and the 5002 server was never installed.
 # v2.0: one script, two operating systems. `uname -s` picks the branch.
 #         Linux  (the DigitalOcean droplet, Ubuntu 24.04): deps go into a venv
 #                at $ROOT/.venv (PEP 668 forbids pip --user on Ubuntu); units
@@ -80,7 +83,7 @@ if [ "$OS" = "Linux" ]; then
   for t in "$ROOT"/agents/systemd/*.timer; do
     systemctl --user enable -q --now "$(basename "$t")"
   done
-  for s in selene-server.service selene-edu.service selene-ngrok.service; do
+  for s in selene-server.service selene-edu-server.service selene-ngrok.service; do
     [ -f "$UNITS/$s" ] && systemctl --user enable -q "$s"
   done
 else
@@ -103,7 +106,7 @@ fi
 if [ -f "$ROOT/LIVE" ]; then
   if [ "$OS" = "Linux" ]; then
     say "LIVE - restarting servers"
-    systemctl --user restart selene-server.service selene-edu.service
+    systemctl --user restart selene-server.service selene-edu-server.service
     sleep 4
   fi
   curl -sf -m 5 http://127.0.0.1:5001/health >/dev/null \
