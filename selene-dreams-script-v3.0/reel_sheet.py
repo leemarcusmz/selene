@@ -1,7 +1,7 @@
 """
 reel_sheet.py — mirror every published trial reel into a Google Sheet
 =============================================================================
-VERSION 2.5 — 2026-09-16
+VERSION 2.6 — 2026-09-28
 
 TWO TABS, TWO DIFFERENT JOBS
     "Trial Reels"  — the MIRROR. One row per published reel: hook, caption,
@@ -50,6 +50,10 @@ COLUMN ORDER IS DELIBERATELY ODD (v2.1)
     An ugly header row is cheaper than losing his writing.
 
 CHANGELOG
+    2.6  2026-09-28  Videos tab col M "Status" (derived): set_video_status()
+                     writes "failed 2/3: <why>" / "parked: <why>" / blank so
+                     a video that keeps failing is visible in the sheet, not
+                     only in a log nobody reads. Header written on demand.
     2.5  2026-09-16  RATING column (W) and the Taste Notes tab. Both are
                      Marcus's; the lane reads them (reel_feedback.py) and
                      writes only the Seen stamp on the taste tab. W is
@@ -151,6 +155,7 @@ VIDEO_HEADERS = [
     "Notes",             # J  yours
     "Framing",           # K  <- YOURS. crop / fit / blank = auto
     "-> Framing",        # L  derived, so you can see what K did
+    "Status",            # M  derived: failed n/3 / parked / blank (2.6)
 ]
 
 # crop / fit / anything else means "you decide"
@@ -283,6 +288,23 @@ def video_settings(filename):
                 "found": True,
             }
     return blank
+
+
+def set_video_status(filename, text):
+    """Write col M for one video row. Never raises; missing row = no-op."""
+    try:
+        ws = _open_tab(VIDEO_TAB)
+        rows = ws.get_all_values()
+        if not rows or len(rows[0]) < 13 or not str(rows[0][12]).strip():
+            ws.update(values=[["Status"]], range_name="M1", value_input_option="RAW")
+        for i, row in enumerate(rows[1:], start=2):
+            if row and row[0].strip() == filename:
+                ws.update(values=[[text[:200]]], range_name=f"M{i}",
+                          value_input_option="RAW")
+                return True
+    except Exception as e:
+        log(f"status not written for {filename} ({type(e).__name__})")
+    return False
 
 
 def upsert_video(filename, detected, decisions, product="", variants=0):

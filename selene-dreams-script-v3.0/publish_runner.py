@@ -1,7 +1,7 @@
 """
 publish_runner.py — the last step: actually post to Instagram
 =============================================================================
-VERSION 1.2 — 2026-08-26
+VERSION 1.3 — 2026-09-28
 
 WHAT IT DOES
     Finds every Generation Status row that has been approved on the review
@@ -31,6 +31,16 @@ WHAT PROVES THIS WORKS
     documented shape as the single-image one.
 
 CHANGELOG
+    1.3  2026-09-28  REVIEW GATE. A row whose latest caption review is
+                     REVISE-UNRESOLVED or FAIL is HELD, not published, with
+                     the reason in the remark — unless a human has since
+                     edited the caption on the review page ("caption edited
+                     at review" in the remark) or written "override" in
+                     User Remarks (col N). Before this the reviewer's verdict
+                     was advisory: 9 of 11 REVISE posts shipped unchanged
+                     (flow diagnostic 2026-09-14). Rows reviewed before
+                     caption_runner 1.3 carry a bare "REVISE" and are treated
+                     as unresolved too — re-approve after checking them.
     1.2  2026-08-26  PRODUCT TAGS: each published slide now carries a
                      shoppable tag for the catalog product matching the
                      queue row's fabric/type/variant (available_catalogs +
@@ -352,6 +362,36 @@ def publish_row(gs, queue, gs_row, number, dry_run=False):
     return media_id, link
 
 
+def review_gate(row):
+    """(ok, reason). Reads the system remark (col M) and User Remarks (col N).
+    Blocks on the LATEST review verdict being unresolved, unless a later
+    human caption edit or an explicit override exists."""
+    import re
+    remark = cell(row, config.GS_COL_SYS_REMARK)
+    user = cell(row, config.GS_COL_USER_REMARK)
+    if "override" in user.lower():
+        return True, "override in User Remarks"
+    # Only the reviewer's verdicts count. "REVIEW: approved" is the review
+    # PAGE recording a human approval — that is the click that used to ship
+    # unfixed captions, so it does not lift the gate; an edit or an override does.
+    verdicts = re.findall(
+        r"REVIEW:\s*(PASS|REVISED|REVISE-UNRESOLVED|REVISE|FAIL|UNREVIEWED)\b", remark)
+    if not verdicts:
+        return True, "no review on record"
+    last = verdicts[-1].strip().upper()
+    blocked = last in ("FAIL", "REVISE", "REVISE-UNRESOLVED")
+    if not blocked:
+        return True, last
+    # A human edit AFTER the review lifts the block.
+    pos_review = remark.rfind("REVIEW:")
+    pos_edit = remark.rfind("caption edited at review")
+    if pos_edit > pos_review:
+        return True, f"{last} but caption edited at review afterwards"
+    return False, (f"caption review is {last} and nobody has fixed it — open the "
+                   f"post on the review page, edit the caption, and approve again "
+                   f"(or write 'override' in User Remarks col N to publish as is)")
+
+
 def caption_for(gs, number):
     cap_sheet = gs.spreadsheet.worksheet("Generated Caption")
     for r in cap_sheet.get_all_values()[1:]:
@@ -389,6 +429,15 @@ def run(dry_run=False, only=None, force=False):
             continue
         if when > now and not force:
             log(f"#{number}: not due until {when:%Y-%m-%d %H:%M %Z}")
+            continue
+        ok_gate, why = review_gate(row)
+        if not ok_gate:
+            log(f"#{number}: HELD — {why}")
+            try:
+                gs.update_cell(idx, config.GS_COL_POST_STATUS, POST_HOLD)
+                note(gs, idx, f"held by review gate: {why}")
+            except Exception:
+                pass
             continue
         due.append((idx, number))
 

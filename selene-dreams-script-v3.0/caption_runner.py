@@ -1,8 +1,15 @@
 # =============================================================================
-# Selene Dreams — Caption Runner v1.2 (2026-09-16)
+# Selene Dreams — Caption Runner v1.3 (2026-09-28)
 # caption_runner.py — Caption generation, fired by the v14 auto-chain
 #
 # CHANGELOG
+#   v1.3  2026-09-28 — THE REVIEW VERDICT IS NOW EXPLICIT. The remark used to
+#         say "REVIEW: REVISE" whether or not the revised caption was applied,
+#         so nothing downstream could tell a fixed caption from an unfixed
+#         one — and the diagnostic found 9 of 11 REVISE posts published
+#         unchanged. Now the remark says REVIEW: PASS · REVISED (applied) ·
+#         REVISE-UNRESOLVED (draft kept). publish_runner 1.3 blocks on
+#         REVISE-UNRESOLVED until a human edits the caption or overrides.
 #   v1.2  2026-09-16 — {taste_brief}: the distilled taste brief goes into every
 #                      caption prompt (caption.md v5). Fail-open.
 #   v1.1  2026-09-07 — Seven caption STYLES replace the locked 5-line shape.
@@ -514,12 +521,15 @@ def _run_caption(number, sheets_client=None, drive_service=None, force=False):
         if verdict == "FAIL":
             return fail(f"brand review FAILED — {review_line}")
 
+        outcome = verdict
         if verdict == "REVISE":
             new_caption = str(review.get("revisedCaption", "")).strip()
             ok_rev, rev_msg = (validate_caption(new_caption, style)
                                if new_caption else (False, "empty"))
+            outcome = "REVISE-UNRESOLVED"
             if ok_rev:
                 caption = new_caption
+                outcome = "REVISED (applied)"
                 log("  Brand review revised the caption.")
             elif new_caption:
                 log(f"  NOTE: revised caption failed validation ({rev_msg}) — "
@@ -531,6 +541,10 @@ def _run_caption(number, sheets_client=None, drive_service=None, force=False):
             if len(new_alts) == len(image_ids):
                 alt_texts = [str(a) for a in new_alts]
 
+        # review_line starts with the raw verdict; swap in the explicit outcome
+        # so the publisher (and Marcus) can read the state at a glance.
+        if review_line.upper().startswith(verdict):
+            review_line = outcome + review_line[len(verdict):]
         remark = " | ".join(x for x in [remark, f"REVIEW: {review_line}"] if x)
 
         # --- Write results ---

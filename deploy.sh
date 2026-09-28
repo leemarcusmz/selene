@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy.sh  v2.0.1  (2026-09-23)
+# deploy.sh  v2.1  (2026-09-28)
+# v2.1: adds selene-deploy.timer/.service (bin/autodeploy.sh) — installed by
+#       the same loop below, so after ONE manual deploy every later push to
+#       production deploys itself within 5 minutes.
 # v2.0.1: the educational SERVER unit is selene-edu-server.service. v2.0 named
 #         it selene-edu.service, which collided with the edu *poke* unit of the
 #         same name - the poke won and the 5002 server was never installed.

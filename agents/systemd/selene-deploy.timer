@@ -1,0 +1,12 @@
+# selene-deploy.timer  v1.0  (2026-09-28)
+# Every 5 minutes, offset from the 15-minute lane pokes.
+[Unit]
+Description=Selene autodeploy timer: every 5 min
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

@@ -1,7 +1,7 @@
 """
 reel_runner.py — the trial-reel lane, end to end
 =============================================================================
-VERSION 1.18 — 2026-09-16
+VERSION 1.19 — 2026-09-28
 
 WHAT IT DOES
     Marcus puts a video in Drive "05. Video Reel / 01. Video Content" (from his
@@ -51,6 +51,19 @@ CLI
     python3 reel_runner.py --post-metrics    # read carousel results back now
 
 CHANGELOG
+    1.19 2026-09-28  FAILURES ARE VISIBLE AND FINITE. On 2026-09-28 a dry
+                     run failed twice on caption validation and the only
+                     trace was a log line; a video like that would be retried
+                     forever and the lane could stall silently. Now: each
+                     video counts consecutive failures; at MAX_FAILS_PER_VIDEO
+                     (3) it is PARKED (blocked like rejected, reason kept,
+                     cleared by hand: delete "parked" in reels.json or rename
+                     the file). Every failure/parking writes the Videos tab
+                     col M Status (reel_sheet 2.6). The LANE counts consecutive
+                     failed ticks; at LANE_FAIL_ALERT_TICKS (4, ~1 h) it logs a
+                     WARNING and emails Marcus once per streak via the same
+                     SMTP settings the educational lane uses (fail-open if
+                     mail is not configured). A success resets both counters.
     1.18 2026-09-16  ORDERING BUG. eligible_videos() sorted never-posted
                      videos by PATH, so the numbered NZ clips ("1. Mount",
                      "10. Drone"...) — all 16:9 — were always first and the
@@ -212,7 +225,9 @@ from zoneinfo import ZoneInfo
 
 import reel_config
 
-VERSION = "1.18"
+VERSION = "1.19"
+MAX_FAILS_PER_VIDEO = getattr(reel_config, "MAX_FAILS_PER_VIDEO", 3)
+LANE_FAIL_ALERT_TICKS = getattr(reel_config, "LANE_FAIL_ALERT_TICKS", 4)
 
 IG_USER_ID = "17841451177142651"          # @selenedreams_official
 GRAPH = "https://graph.facebook.com/v21.0"
@@ -315,6 +330,9 @@ def eligible_videos(state, pool, ignore_cooldown=False):
             continue
         if rec.get("rejected"):
             blocked.append((name, f"rejected: {rec['rejected']}"))
+            continue
+        if rec.get("parked"):
+            blocked.append((name, f"parked: {rec['parked']}"))
             continue
         if len(runs) >= reel_config.MAX_VARIANTS_PER_VIDEO:
             blocked.append((name, f"all {len(runs)} hook variants used "
@@ -804,15 +822,16 @@ def run(dry_run=False, force=False, only=None, skip_drive=False):
         try:
             result = process(path, h, state, dry_run=dry_run)
         except Exception as e:
-            state["videos"].setdefault(h, {})["last_error"] = str(e)
-            state["videos"][h]["last_error_at"] = \
-                now_local().isoformat(timespec="seconds")
-            save_state(state)
-            log(f"  FAILED: {e}")
-            log("  video stays in the pool and will be retried on the next tick.")
+            _record_failure(state, h, os.path.basename(path), str(e), dry_run)
             return
 
         if result is not None:
+            rec = state["videos"].setdefault(h, {})
+            if rec.get("fail_count"):
+                rec["fail_count"] = 0
+                _status(os.path.basename(path), "")
+            state["fail_streak"] = 0
+            state.pop("fail_alerted", None)
             save_state(state)
             return result
 
@@ -823,6 +842,76 @@ def run(dry_run=False, force=False, only=None, skip_drive=False):
 
     log("every eligible video was rejected as unusable — nothing posted")
     return None
+
+
+def _status(filename, text):
+    try:
+        import reel_sheet
+        reel_sheet.set_video_status(filename, text)
+    except Exception:
+        pass
+
+
+def _record_failure(state, h, name, err, dry_run):
+    """Count it, park the video at the cap, warn (and once, mail) when the
+    whole lane keeps failing. Never raises."""
+    rec = state["videos"].setdefault(h, {})
+    rec["last_error"] = err
+    rec["last_error_at"] = now_local().isoformat(timespec="seconds")
+    short = err[:140]
+    log(f"  FAILED: {err}")
+    if dry_run:
+        log("  (dry run — not counted)")
+        return
+    rec["fail_count"] = int(rec.get("fail_count") or 0) + 1
+    if rec["fail_count"] >= MAX_FAILS_PER_VIDEO:
+        rec["parked"] = f"{rec['fail_count']} failures, last: {short}"
+        log(f"  PARKED after {rec['fail_count']} failures — will not be retried. "
+            f"Clear 'parked' in reels.json (or rename the file) to try again.")
+        _status(name, f"parked: {rec['parked']}")
+    else:
+        log(f"  failure {rec['fail_count']}/{MAX_FAILS_PER_VIDEO} — retried next tick")
+        _status(name, f"failed {rec['fail_count']}/{MAX_FAILS_PER_VIDEO}: {short}")
+    state["fail_streak"] = int(state.get("fail_streak") or 0) + 1
+    if state["fail_streak"] >= LANE_FAIL_ALERT_TICKS and not state.get("fail_alerted"):
+        log(f"WARNING: {state['fail_streak']} consecutive ticks failed — the reel "
+            f"lane is not publishing. Last: {short}")
+        if _mail_alert(state["fail_streak"], name, err):
+            state["fail_alerted"] = now_local().isoformat(timespec="seconds")
+    save_state(state)
+
+
+def _mail_alert(streak, name, err):
+    """One email per failure streak. Uses the SMTP app password from .env
+    (SELENE_MAIL_FROM / SELENE_MAIL_APP_PASSWORD). False if unconfigured."""
+    try:
+        import smtplib
+        from email.message import EmailMessage
+        import config
+        env = config._ENV
+        sender = (env.get("SELENE_MAIL_FROM") or "").strip()
+        pw = (env.get("SELENE_MAIL_APP_PASSWORD") or "").replace(" ", "").strip()
+        to = (env.get("SELENE_ALERT_TO") or "lee.marcusmz@gmail.com").strip()
+        if not sender or not pw:
+            log("  (mail not configured — SELENE_MAIL_FROM/APP_PASSWORD missing; no email)")
+            return False
+        msg = EmailMessage()
+        msg["Subject"] = f"[SELENE DREAMS] Reel lane: {streak} ticks failed in a row"
+        msg["From"], msg["To"] = sender, to
+        msg.set_content(
+            f"The trial-reel lane has failed {streak} consecutive ticks and is not "
+            f"publishing.\n\nLast video: {name}\nLast error: {err}\n\n"
+            f"Check on the VPS: tail -30 ~/runner/selene/selene-dreams-script-v3.0/"
+            f"_logs/reels-$(date +%F).log\nParked videos show 'parked' in the Videos "
+            f"tab col M of the Trial Reel sheet.\n\nreel_runner {VERSION}")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as s:
+            s.login(sender, pw)
+            s.send_message(msg)
+        log(f"  alert emailed to {to}")
+        return True
+    except Exception as e:
+        log(f"  alert email failed ({type(e).__name__}: {str(e)[:80]})")
+        return False
 
 
 def index_pool():

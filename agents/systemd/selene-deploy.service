@@ -1,0 +1,11 @@
+# selene-deploy.service  v1.0  (2026-09-28)
+# One check: pull + deploy production if GitHub moved. See bin/autodeploy.sh.
+[Unit]
+Description=Selene autodeploy: pull production and deploy if changed
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/runner/selene/bin/autodeploy.sh
+StandardOutput=append:%h/runner/logs/selene-deploy.log
+StandardError=inherit
