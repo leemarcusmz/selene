@@ -1,5 +1,8 @@
-<!-- VERSION: 2026-09-16.v5 -->
+<!-- VERSION: 2026-09-28.v6 -->
 <!-- CHANGELOG
+     2026-09-28.v6 — {performance_section}: the image lane's top and bottom published
+       posts, so a candidate resembling what the audience rewarded scores higher within
+       the rubric, not only what the team picked.
      2026-09-16.v5 — {taste_brief} after the references: his distilled, cited
        principles. Calibrates the rubric; the rubric still scores.
      2026-09-16.v4 — {reference_section}: Marcus's own reference images from
@@ -24,6 +27,12 @@ These are distilled from his own notes and ratings; each line quotes him. They c
 
 ## WHAT PAST CANDIDATES LOOKED LIKE, AND WHAT HAPPENED TO THEM
 {attribute_section}
+
+## WHAT THE AUDIENCE REWARDED (posts this lane published from past shortlists, ranked by reach + shares + saves)
+{performance_section}
+
+Read this like a brief from the audience: what the TOP posts showed that the BOTTOM ones did not (setting, product, framing, people, light). A candidate that shares the TOP pattern should score higher within the rubric; one that repeats the BOTTOM pattern should not reach 10+. Reach is the audience's vote; the rubric and the brand guide are still the law.
+
 
 CANDIDATES: {img_dir} contains one hero image per candidate, named cand_<n>.jpg where <n> is the candidate number. The file {cand_path} holds each candidate's metadata (source, type, caption/concept, engagement, suggested product, total image count). View EVERY image with the Read tool. Score the IMAGE first; use metadata only as context.
 

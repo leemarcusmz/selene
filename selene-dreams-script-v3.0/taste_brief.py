@@ -1,7 +1,7 @@
 """
 taste_brief.py — distill the taste layer into ONE brief every writer reads
 =============================================================================
-VERSION 1.3 — 2026-09-23
+VERSION 1.4 — 2026-09-28
 
 WHAT
     taste/references.md, feedback.md and outcomes.md (taste_store) are raw.
@@ -48,6 +48,19 @@ THE RULE
     The brief changes HOW things are written. It never decides WHETHER.
 
 CHANGELOG
+    1.4  2026-09-28  LANES FOR PERFORMANCE PRINCIPLES + A PERFORMANCE BLOCK
+                     FOR WRITERS. (a) The first performance principle (direct-
+                     address captions) reached writer_edu — slide copy is not a
+                     caption. A performance-sourced principle now gets its lane
+                     from what it says: "visual" (pictures) or "copy" (captions
+                     and hooks); "all" is rewritten to "copy". New lane "copy"
+                     reaches caption, reel-hook, reel-caption and caption_edu —
+                     never writer_edu, picker_edu, image-prompts or screening.
+                     (b) performance_block(lane): the ranked top/bottom posts
+                     of ONE lane, with product + scene, from the local cache
+                     taste_store writes (_state/taste-outcomes.json). The image
+                     prompt writer and the screener now see what the audience
+                     rewarded, not only their own QA scores. Fail-open.
     1.3  2026-09-23  Performance may source principles (see above). Before
                      this, 53 posts' reach/shares/saves could never become a
                      principle because outcomes needed a paired rating, which
@@ -85,7 +98,7 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.3"
+VERSION = "1.4"
 CACHE_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.md")
 STAMP_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.stamp")
 DISTILL_EVERY_DAYS = getattr(config, "TASTE_DISTILL_EVERY_DAYS", 6)
@@ -108,13 +121,25 @@ SCHEMA = {
 STAGE_LANES = {
     "image-prompts": {"all", "images", "visual"},
     "screening":     {"all", "images", "visual"},
-    "caption":       {"all", "images"},
-    "reel-hook":     {"all", "reels"},
-    "reel-caption":  {"all", "reels"},
+    "caption":       {"all", "images", "copy"},
+    "reel-hook":     {"all", "reels", "copy"},
+    "reel-caption":  {"all", "reels", "copy"},
     "writer_edu":    {"all", "educational"},
-    "caption_edu":   {"all", "educational"},
+    "caption_edu":   {"all", "educational", "copy"},
     "picker_edu":    {"all", "educational", "visual"},
 }
+# Which outcome lanes feed each writer's performance block.
+PERF_LANES = {
+    "image-prompts": ("images",),
+    "screening":     ("images",),
+    "caption":       ("images",),
+    "reel-hook":     ("reels", "manual"),
+    "reel-caption":  ("reels", "manual"),
+    "picker_edu":    ("educational",),
+    "caption_edu":   ("educational",),
+}
+OUTCOMES_CACHE = os.path.join(reel_config.BASE_DIR, "_state", "taste-outcomes.json")
+NO_PERF = "(No measured posts for this lane yet — nothing to rank.)"
 REFERENCE_SOURCE = re.compile(r"\.(jpe?g|png|webp)\b", re.I)
 
 PLACEHOLDER = ("(No taste brief yet. The brand guide governs; Marcus's notes "
@@ -172,16 +197,36 @@ def build_performance(rows):
         n = min(PERF_TOP_N, len(posts) // 2)
         med = posts[len(posts) // 2]["score"]
         out.append(f"#### {lane} — {len(posts)} posts ranked ({win}), median score {med}")
+        out.append(f"(each line: id · TOP/BOTTOM · [{lane}] · what the post showed · format · numbers)")
         for label, group in (("TOP", posts[:n]), ("BOTTOM", posts[-n:])):
             for p in group:
                 pid += 1
                 what = " ".join(str(p.get("what") or "").split())[:320]
                 out.append(
-                    f"- P{pid} {label} · {what} · {p.get('choices') or ''} · "
+                    f"- P{pid} {label} · [{lane}] · {what} · {p.get('choices') or ''} · "
                     f"reach {p.get('reach')}, shares {p.get('shares') or 0}, "
                     f"saves {p.get('saves') or 0}, score {p['score']} · {p.get('posted', '')}")
         out.append("")
     return "\n".join(out).strip()
+
+
+def performance_block(stage):
+    """What a writer gets: its own lanes' ranked posts from the local cache.
+    Never raises; a placeholder when there is nothing."""
+    try:
+        lanes = PERF_LANES.get(stage)
+        if not lanes:
+            return NO_PERF
+        rows = json.loads(_read(OUTCOMES_CACHE) or "[]")
+        rows = [r for r in rows if (r.get("lane") or "") in lanes]
+        text = build_performance(rows)
+        if not text:
+            return NO_PERF
+        if len(text) > MAX_BLOCK_CHARS:
+            text = text[:MAX_BLOCK_CHARS].rsplit("\n", 1)[0] + "\n(trimmed)"
+        return text
+    except Exception:
+        return NO_PERF
 
 
 def validate_principles(principles, sources_text, perf_text=""):
@@ -212,6 +257,12 @@ def validate_principles(principles, sources_text, perf_text=""):
         if in_perf and not in_src and len(set(PERF_ID.findall(source))) < 2:
             dropped.append(f"performance principle cites < 2 posts: {text[:50]}")
             continue
+        # A performance principle is about published posts: what they showed
+        # ("visual") or what they said ("copy"). It is never voice guidance for
+        # slide copy or a picker, so "all" is rewritten to "copy".
+        perf_only = in_perf and not in_src
+        if perf_only and (p.get("lanes") or "all").strip().lower() in ("all", ""):
+            p = dict(p, lanes="copy")
         if not source:
             dropped.append(f"no source: {text[:50]}")
             continue

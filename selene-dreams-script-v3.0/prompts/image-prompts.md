@@ -1,5 +1,8 @@
-<!-- VERSION: 2026-09-23.v6 -->
+<!-- VERSION: 2026-09-28.v7 -->
 <!-- CHANGELOG
+     2026-09-28.v7 — {performance_section}: the image lane's top and bottom posts by
+       reach + shares + saves, with product + scene, so prompts optimise against the
+       audience and not only the QA rubric.
      2026-09-23.v6 — Explicit people rule (full figures OK, face never visible) and a
        product-visibility rule: people may never crowd the product out of frame.
      2026-09-16.v5 — {taste_brief}: Marcus's distilled taste, cited line by line,
@@ -20,6 +23,11 @@ Context from the weekly report: {concept}
 
 These are distilled from his own notes and ratings; each line quotes him. They calibrate the brand guide, never replace it.
 
+
+## WHAT THE AUDIENCE REWARDED (this lane's published posts, ranked by reach + shares + saves)
+{performance_section}
+
+Read this like a brief from the audience: what the TOP posts showed that the BOTTOM ones did not (setting, product, framing, people, light). Borrow the pattern, never the exact scene. Reach is the audience's vote; the rubric and the brand guide are still the law.
 
 ## THIS WEEK'S CONTEXT
 {week_context}

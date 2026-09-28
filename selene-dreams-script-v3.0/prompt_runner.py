@@ -1,5 +1,5 @@
 # =============================================================================
-# Selene Dreams — Prompt Runner v1.6 (2026-09-16)
+# Selene Dreams — Prompt Runner v1.7 (2026-09-28)
 # prompt_runner.py — Turn a winning weekly pick into Generation Queue rows
 # =============================================================================
 #
@@ -46,6 +46,10 @@
 #   1.2  2026-08-31  Corrected the recovery instructions above, which
 #                    described a --json path that could never have worked,
 #                    and added rerun_pending_pick.py as the real one.
+#   1.7  2026-09-28  {performance_section}: taste_brief.performance_block(
+#                    "image-prompts") — the image lane's top/bottom posts by
+#                    reach + sends, so the writer sees audience results, not
+#                    only its own QA scores. Fail-open placeholder.
 #   1.6  2026-09-16  {taste_brief}: the distilled taste brief (taste_brief.py)
 #                    goes into every image prompt. Fail-open placeholder.
 #   1.5  2026-09-16  References come from DRIVE. reference_section() now
@@ -97,6 +101,14 @@ def _taste_brief():
         return taste_brief.brief_block("image-prompts")
     except Exception:
         return "(taste brief unavailable this run)"
+
+
+def _performance():
+    try:
+        import taste_brief
+        return taste_brief.performance_block("image-prompts")
+    except Exception:
+        return "(performance data unavailable this run)"
 
 
 def reference_section():
@@ -471,6 +483,7 @@ def _run_selection(payload):
                 brand_section=brand_section, week_context=context,
                 reference_section=reference_section(),
                 taste_brief=_taste_brief(),
+                performance_section=_performance(),
                 playbook_section=playbook, out_path=out_path,
             )
             ok, result = invoke_claude_json(

@@ -1,5 +1,5 @@
 # =============================================================================
-# Selene Dreams — Visual Screening Runner v1.3 (2026-09-16)
+# Selene Dreams — Visual Screening Runner v1.4 (2026-09-28)
 # screen_runner.py — Give the weekly research agent eyes + a taste that learns
 # =============================================================================
 #
@@ -25,6 +25,9 @@
 #   python3 screen_runner.py --week 2026-08-17
 # =============================================================================
 # CHANGELOG
+#   1.4  2026-09-28  {performance_section}: taste_brief.performance_block(
+#                    "screening") — what the image lane's published posts
+#                    did, so the screener learns from results, not only picks.
 #   1.3  2026-09-16  THE TASTE BRIEF. Runs taste_brief.maybe_distill() first
 #                    (weekly, Monday, before scoring) and passes {taste_brief}
 #                    into screening.md v5. Fail-open.
@@ -384,9 +387,11 @@ def _run_screen(week):
             import taste_brief
             taste_brief.maybe_distill()
             brief = taste_brief.brief_block("screening")
+            performance = taste_brief.performance_block("screening")
         except Exception as e:
             log(f"  taste brief unavailable ({type(e).__name__})")
             brief = "(taste brief unavailable this run)"
+            performance = "(performance data unavailable this run)"
         try:
             import reference_drive
             reference_drive.refresh()
@@ -399,6 +404,7 @@ def _run_screen(week):
         prompt = template.format(
             mem=mem, img_dir=img_dir, cand_path=cand_path, out_path=out_path,
             reference_section=reference_section, taste_brief=brief,
+            performance_section=performance,
             attribute_section=memory_digests.attribute_digest(mem),
             min_score=MIN_SCORE, smin=SHORTLIST_SIZE_MIN, smax=SHORTLIST_SIZE_MAX)
         log(f"  Invoking Claude to view and score every candidate "

@@ -1,5 +1,8 @@
-<!-- VERSION: 2026-09-23.v3 -->
+<!-- VERSION: 2026-09-28.v4 -->
 <!-- CHANGELOG
+     2026-09-28.v4 — Lane rule for PERFORMANCE principles: "visual" (what the
+       pictures showed) or "copy" (what captions/hooks said), never "all". "copy"
+       reaches caption and hook writers only, not slide copy or pickers.
      2026-09-23.v3 — PERFORMANCE block: each lane's top and bottom posts by
        reach + shares + saves (Marcus's goal metric), ranked in code. A principle
        may now come from performance alone if it names what 2+ top posts share
@@ -38,7 +41,7 @@ You are distilling what Marcus (founder of Selene Dreams, premium natural-fibre 
 - Performance may also strengthen or weaken a feedback principle (say so in its text: "audience agrees: P2, P4 top the lane").
 - Authority when they conflict: Marcus's FEEDBACK > PERFORMANCE > REFERENCES. If the audience disagrees with Marcus, keep his principle and append "audience disagrees: <ids>" so he can decide.
 - Prefer fewer, sharper principles. If two overlap, merge them and keep the stronger quote.
-- lanes: "visual" for anything about how pictures LOOK (light, framing, props, palette, gesture) — it reaches only the stages that choose or make images. "reels" / "images" / "educational" for a flow's copy or choices. "all" only for something every writer, including caption and slide-copy writers, should act on. A principle sourced only from a reference image is visual; the code enforces that.
+- lanes: "visual" for anything about how pictures LOOK (light, framing, props, palette, gesture) — it reaches only the stages that choose or make images. "copy" for anything about what captions or hooks SAY — it reaches caption and hook writers only, never slide copy or pickers. "reels" / "images" / "educational" for one flow's copy or choices. "all" only for something every writer, including slide-copy writers, should act on. A principle sourced only from a reference image is visual, and a principle sourced only from PERFORMANCE must be "visual" or "copy" (the code rewrites "all" to "copy"); each post's line carries its lane in [brackets].
 - FEEDBACK outranks REFERENCES: a reference note is a machine description of an image Marcus chose, feedback is Marcus. When both exist, spend the budget on feedback first.
 - The brand guide still governs; do not restate it. This brief is what Marcus has added ON TOP of it.
 - In "changes", say in one or two sentences what changed versus the previous brief and why (new feedback since when, a principle dropped because a later note contradicted it, etc.).

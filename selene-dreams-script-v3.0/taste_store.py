@@ -1,7 +1,7 @@
 """
 taste_store.py — ONE taste layer for all three lanes
 =============================================================================
-VERSION 1.4 — 2026-09-23
+VERSION 1.5 — 2026-09-28
 
 THE DECISION (Marcus, 2026-09-16)
     Keep the image, educational and reel flows SEPARATE — the flows differ —
@@ -39,6 +39,16 @@ RATE LIMIT
     `python3 taste_store.py --sync` forces one.
 
 CHANGELOG
+    1.5  2026-09-28  FEEDBACK TRIGGERS A DISTILL. sync() now (a) writes the
+                     outcomes list to _state/taste-outcomes.json so writers
+                     can rank posts without a clone (taste_brief.performance_
+                     block), and (b) hashes feedback.md; when the hash differs
+                     from the last sync, it calls taste_brief.distill() right
+                     away instead of waiting for Monday. So a Taste Note or a
+                     rating Marcus writes reaches the writers within one sync
+                     interval (TASTE_SYNC_EVERY_HOURS, now 1) — the Monday
+                     distill stays as the floor. The distill only runs when
+                     feedback changed, so quiet syncs cost no Claude call.
     1.4  2026-09-23  OUTCOMES SAY WHAT THE POST WAS. Image-lane carousel rows
                      were just "row #N", so the brief could see a post did well
                      but not what it showed. Now joined to the Generation Queue:
@@ -76,9 +86,10 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.4"
+VERSION = "1.5"
 TASTE_DIR = "taste"
-SYNC_EVERY_HOURS = getattr(config, "TASTE_SYNC_EVERY_HOURS", 6)
+SYNC_EVERY_HOURS = getattr(config, "TASTE_SYNC_EVERY_HOURS", 1)
+FEEDBACK_STAMP = os.path.join(reel_config.BASE_DIR, "_state", "taste-feedback.hash")
 STAMP_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-sync.stamp")
 
 
@@ -447,9 +458,35 @@ def write_local(dest_dir):
     for name, body in files.items():
         with open(os.path.join(tdir, name), "w") as f:
             f.write(body)
+    try:
+        cache = os.path.join(reel_config.BASE_DIR, "_state", "taste-outcomes.json")
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        with open(cache, "w") as f:
+            f.write(files["outcomes.json"])
+    except Exception as e:
+        log(f"outcomes cache not written ({type(e).__name__})")
     log(f"taste/: {len(refs)} reference(s), {len(fb)} feedback item(s), "
         f"{len(outs)} outcome(s)")
     return tdir
+
+
+def _feedback_changed(mem_dir):
+    """True when taste/feedback.md differs from the last sync's copy."""
+    import hashlib
+    try:
+        with open(os.path.join(mem_dir, TASTE_DIR, "feedback.md")) as f:
+            h = hashlib.sha1(f.read().encode()).hexdigest()[:12]
+        old = ""
+        try:
+            with open(FEEDBACK_STAMP) as f:
+                old = f.read().strip()
+        except Exception:
+            pass
+        with open(FEEDBACK_STAMP, "w") as f:
+            f.write(h)
+        return bool(old) and old != h
+    except Exception:
+        return False
 
 
 def sync():
@@ -463,6 +500,7 @@ def sync():
         if not mem:
             return False, "memory repo clone failed"
         write_local(mem)
+        changed = _feedback_changed(mem)
         try:
             import taste_brief
             taste_brief.refresh_cache_from(mem)
@@ -471,6 +509,14 @@ def sync():
         ok, msg = pipeline_state.push_with_retry(
             mem, f"Taste layer {datetime.now():%Y-%m-%d %H:%M}", logger=log)
         _stamp()
+        if changed:
+            try:
+                import taste_brief
+                dok, dmsg = taste_brief.distill()
+                log(f"feedback changed -> distill: {dmsg}")
+                msg += f" · distilled ({dmsg[:60]})"
+            except Exception as e:
+                log(f"feedback changed but distill failed ({type(e).__name__})")
         return ok, msg
     except Exception as e:
         return False, f"{type(e).__name__}: {str(e)[:120]}"
