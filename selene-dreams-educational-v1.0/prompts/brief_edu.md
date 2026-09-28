@@ -1,5 +1,7 @@
-<!-- VERSION: 2026-09-10.v1 -->
+<!-- VERSION: 2026-09-23.v2 -->
 <!-- CHANGELOG
+     2026-09-23.v2 — People rule aligned with the image lane: full figures allowed,
+       the face never visible (turned away, hidden, asleep, out of frame).
      2026-09-10.v1 — First release. Marcus's matching design (2026-09-10): every slide gets a
        hidden VISUAL BRIEF - what the photograph behind it should show - that is never
        displayed. The picker matches it against the library's image descriptions; when
@@ -28,7 +30,8 @@ planner can either find that picture in a library or generate it.
   scene that stands for the whole post.
 - Vary the scenes across the post: no two slides should brief the same picture. Move
   between wide bedroom, detail, and gesture.
-- No faces. Hands, a back, a shoulder are fine. No text, logos, screens showing content,
+- People are welcome, including full figures, but a face is never visible (turned away,
+  hidden by hair, asleep, cropped out). No text, logos, screens showing content,
   or products Selene does not sell (quilts, patterned or striped bedding, velvet, knits).
 - Do not name a fabric or colour the words do not name; the brief is about what is seen.
 

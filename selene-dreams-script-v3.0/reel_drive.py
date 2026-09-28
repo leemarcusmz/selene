@@ -1,7 +1,7 @@
 """
 reel_drive.py — pull new videos out of Google Drive into the local pool
 =============================================================================
-VERSION 1.5 — 2026-09-11
+VERSION 1.6 — 2026-09-28
 
 WHY DRIVE IS THE SOURCE NOW
     Marcus wanted to add videos from anywhere, including his phone. The local
@@ -34,6 +34,23 @@ OAUTH, NOT THE SERVICE ACCOUNT
     possible behaviour for a lane whose whole promise is "drop it and forget".
 
 CHANGELOG
+    1.6  2026-09-28  DRIVE IS NOW THE ON/OFF SWITCH (Marcus: "I only need to
+                     delete the video from the drive"). Two additions:
+                     WITHDRAWAL — a video this module downloaded that is no
+                     longer in the Drive folder has its local copy MOVED to
+                     "01. Retired" (never deleted), so it is never posted
+                     again. Putting it back in Drive (same file restored from
+                     Trash) moves it back. Guards: only after a listing that
+                     succeeded, never when Drive returns zero videos, and never
+                     when more than WITHDRAW_MAX_SHARE of known videos vanish
+                     in one tick (a partial listing must not empty the pool) —
+                     that case is logged loudly instead. Hand-dropped local
+                     files with no Drive record are never touched.
+                     ADOPTION — a new Drive file whose name matches a local
+                     file that no Drive record owns is adopted instead of
+                     downloaded, so uploading the Mac-only videos to Drive
+                     does not create "_2" duplicates. Adoption requires the
+                     sizes to match when Drive reports one.
     1.5  2026-09-11  A LOCK. The 15-minute tick and a manual `--sync` are two
                      processes pointed at the same Drive folder and the same
                      drop folder. Run together, each downloads what the other
@@ -85,6 +102,10 @@ FOLDER_URL = f"https://drive.google.com/drive/folders/{FOLDER_ID}"
 # to spare. A cap, not a preference: without one, a folder cycle or a big nested
 # archive would turn a 15-minute tick into hundreds of Drive calls.
 MAX_FOLDER_DEPTH = 3
+
+# Withdrawal guard: if more than this share of the Drive videos we know about
+# disappear in a single tick, assume a bad listing and retire nothing.
+WITHDRAW_MAX_SHARE = 0.5
 
 VIDEO_MIMES = ("video/mp4", "video/quicktime", "video/x-m4v")
 
@@ -244,6 +265,9 @@ def _sync(state, drive_service=None):
 
     os.makedirs(reel_config.DROP_DIR, exist_ok=True)
 
+    withdrawn, restored = _withdraw_and_restore(pulled, files)
+    owned = {r.get("local") for r in pulled.values() if r.get("local")}
+
     new = skipped = renamed = 0
     for f in files:
         fid = f["id"]
@@ -270,6 +294,21 @@ def _sync(state, drive_service=None):
         if not name.lower().endswith(reel_config.VIDEO_EXTS):
             name += ".mp4"
         dest = os.path.join(reel_config.DROP_DIR, name)
+
+        # ADOPTION: the same video already sits in the pool, dropped there by
+        # hand, and no Drive record owns it. Record it instead of downloading
+        # a duplicate. Size must match when Drive reports one.
+        if not rec and name not in owned and os.path.isfile(dest):
+            dsize = int(f.get("size") or 0)
+            if not dsize or dsize == os.path.getsize(dest):
+                pulled[fid] = {"local": name, "downloaded": True,
+                               "adopted": True, "name": f["name"],
+                               "rel_path": f.get("rel_path", ""),
+                               "modifiedTime": f.get("modifiedTime", "")}
+                owned.add(name)
+                log(f"  adopted local copy for {f['name']} (no download)")
+                new += 1
+                continue
 
         # Never clobber a different file that happens to share a name.
         stem, ext = os.path.splitext(name)
@@ -319,9 +358,67 @@ def _sync(state, drive_service=None):
     # QUIET WHEN NOTHING CHANGED. A tick fires every 15 minutes and almost
     # always has nothing to do; logging on every one buries the ticks that
     # matter and makes a real Drive failure harder to spot, not easier.
-    if new or renamed:
-        log(f"{len(files)} video(s) in Drive; {new} new, {renamed} renamed")
-    return new, skipped
+    if new or renamed or withdrawn or restored:
+        log(f"{len(files)} video(s) in Drive; {new} new, {renamed} renamed, "
+            f"{withdrawn} withdrawn, {restored} restored")
+    return new + withdrawn + restored, skipped
+
+
+def _withdraw_and_restore(pulled, files):
+    """Retire local copies of videos removed from Drive; bring back ones
+    that returned. Returns (withdrawn, restored). Never raises."""
+    withdrawn = restored = 0
+    try:
+        present = {f["id"] for f in files}
+        known = [fid for fid, r in pulled.items() if r.get("downloaded")]
+        gone = [fid for fid in known
+                if fid not in present and not pulled[fid].get("withdrawn")]
+
+        # RESTORE first: same Drive file is back (e.g. restored from Trash).
+        for fid in present:
+            rec = pulled.get(fid)
+            if not rec or not rec.get("withdrawn"):
+                continue
+            src = os.path.join(reel_config.RETIRED_DIR, rec.get("local", ""))
+            dst = os.path.join(reel_config.DROP_DIR, rec.get("local", ""))
+            if rec.get("local") and os.path.isfile(src) and not os.path.exists(dst):
+                os.replace(src, dst)
+                log(f"  back in Drive: {rec.get('name')} -> pool")
+            rec.pop("withdrawn", None)
+            restored += 1
+
+        if not gone:
+            return withdrawn, restored
+        if not files:
+            log(f"WARNING: Drive listed 0 videos; not withdrawing {len(gone)} "
+                f"(looks like a bad listing, not a real removal)")
+            return withdrawn, restored
+        if len(gone) > WITHDRAW_MAX_SHARE * max(1, len(known)):
+            log(f"WARNING: {len(gone)} of {len(known)} known videos vanished "
+                f"from Drive in one tick — NOT withdrawing any. If you really "
+                f"removed them, move their local copies to 01. Retired by hand.")
+            return withdrawn, restored
+
+        os.makedirs(reel_config.RETIRED_DIR, exist_ok=True)
+        for fid in gone:
+            rec = pulled[fid]
+            local = rec.get("local", "")
+            src = os.path.join(reel_config.DROP_DIR, local)
+            if local and os.path.isfile(src):
+                dst = os.path.join(reel_config.RETIRED_DIR, local)
+                if os.path.exists(dst):
+                    stem, ext = os.path.splitext(local)
+                    dst = os.path.join(reel_config.RETIRED_DIR,
+                                       f"{stem}_{int(time.time())}{ext}")
+                    rec["local"] = os.path.basename(dst)
+                os.replace(src, dst)
+            rec["withdrawn"] = time.strftime("%Y-%m-%dT%H:%M")
+            log(f"  withdrawn from Drive: {rec.get('name')} -> 01. Retired")
+            withdrawn += 1
+    except Exception as e:
+        log(f"WARNING: withdrawal check failed ({type(e).__name__}: "
+            f"{str(e)[:120]}) — pool left unchanged")
+    return withdrawn, restored
 
 
 if __name__ == "__main__":

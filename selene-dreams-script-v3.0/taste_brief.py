@@ -1,7 +1,7 @@
 """
 taste_brief.py — distill the taste layer into ONE brief every writer reads
 =============================================================================
-VERSION 1.2 — 2026-09-16
+VERSION 1.3 — 2026-09-23
 
 WHAT
     taste/references.md, feedback.md and outcomes.md (taste_store) are raw.
@@ -15,9 +15,17 @@ THE GUARD AGAINST MUSH
     language within weeks. So every principle must carry a VERBATIM QUOTE
     from feedback.md or references.md and name where it came from. The code
     checks the quote really appears in the source text; an uncited or
-    misquoted principle is DROPPED, not kept. Outcomes may support a
-    principle but cannot be its only source — the audience's numbers are
-    evidence, Marcus's words are the taste.
+    misquoted principle is DROPPED, not kept.
+
+PERFORMANCE CAN TEACH (1.3)
+    Marcus's goal metric (2026-09-23): reach + shares + saves. perf_score()
+    = reach + PERF_WEIGHT x (shares + saves). build_performance() ranks each
+    lane's posts (7d window when enough exist) and hands the distill the TOP
+    and BOTTOM few, each with an id (P1..), what the post showed and its
+    numbers. A principle may now be sourced from PERFORMANCE alone, but the
+    guard requires its quote to be verbatim from a PERFORMANCE line and its
+    source to cite at least TWO post ids — one lucky post is not a pattern.
+    Order of authority: Marcus's feedback > performance > reference notes.
 
 VERSIONED, SO HE CAN AUDIT IT
     brief.md carries a version (date.vN) and a changelog of what changed and
@@ -40,6 +48,14 @@ THE RULE
     The brief changes HOW things are written. It never decides WHETHER.
 
 CHANGELOG
+    1.3  2026-09-23  Performance may source principles (see above). Before
+                     this, 53 posts' reach/shares/saves could never become a
+                     principle because outcomes needed a paired rating, which
+                     almost never exists — the loop had no audience signal.
+                     Adds perf_score, build_performance, {performance} in the
+                     prompt (taste-brief v3), the two-post guard in
+                     validate_principles. Also fixed VERSION constant (had
+                     stayed "1.0" through 1.1 and 1.2).
     1.2  2026-09-16  After the second live distill: the block trimmed at 2000
                      chars and dropped principle 8, so the cap is 3200 and the
                      reference label is shorter ("ref IMG_x.jpg:"). A stage
@@ -69,13 +85,17 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.0"
+VERSION = "1.3"
 CACHE_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.md")
 STAMP_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.stamp")
 DISTILL_EVERY_DAYS = getattr(config, "TASTE_DISTILL_EVERY_DAYS", 6)
 MAX_PRINCIPLES = getattr(config, "TASTE_BRIEF_MAX_PRINCIPLES", 10)
 MAX_BLOCK_CHARS = getattr(config, "TASTE_BRIEF_MAX_CHARS", 3200)
 MIN_SOURCE_CHARS = 40          # nothing to distill below this
+PERF_WEIGHT = getattr(config, "TASTE_PERF_WEIGHT", 25)        # 1 share/save ~ 25 reached accounts
+PERF_MIN_POSTS = getattr(config, "TASTE_PERF_MIN_POSTS", 6)   # per lane, before ranking means anything
+PERF_TOP_N = getattr(config, "TASTE_PERF_TOP_N", 3)           # top N and bottom N per lane
+PERF_ID = re.compile(r"\bP(\d+)\b")
 
 SCHEMA = {
     "principles": {"type": "list", "required": True},
@@ -115,10 +135,61 @@ def _norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
-def validate_principles(principles, sources_text):
+def perf_score(r):
+    """Marcus's goal metric: reach + PERF_WEIGHT x (shares + saves).
+    None when reach is unknown."""
+    try:
+        reach = r.get("reach")
+        if reach in (None, ""):
+            return None
+        sends = (r.get("shares") or 0) + (r.get("saves") or r.get("saved") or 0)
+        return int(reach) + PERF_WEIGHT * int(sends)
+    except Exception:
+        return None
+
+
+def build_performance(rows):
+    """Top and bottom posts per lane, each with an id. Deterministic: the
+    ranking is done here, not by the model. Returns '' when no lane has
+    enough posts."""
+    by_lane = {}
+    for r in rows or []:
+        sc = perf_score(r)
+        if sc is None:
+            continue
+        by_lane.setdefault(r.get("lane") or "?", []).append(dict(r, score=sc))
+    out, pid = [], 0
+    for lane in sorted(by_lane):
+        posts = by_lane[lane]
+        wk = [p for p in posts if p.get("window") == "7d"]
+        if len(wk) >= PERF_MIN_POSTS:
+            posts, win = wk, "7d"
+        else:
+            win = "mixed 72h/7d"
+        if len(posts) < PERF_MIN_POSTS:
+            continue
+        posts.sort(key=lambda p: p["score"], reverse=True)
+        n = min(PERF_TOP_N, len(posts) // 2)
+        med = posts[len(posts) // 2]["score"]
+        out.append(f"#### {lane} — {len(posts)} posts ranked ({win}), median score {med}")
+        for label, group in (("TOP", posts[:n]), ("BOTTOM", posts[-n:])):
+            for p in group:
+                pid += 1
+                what = " ".join(str(p.get("what") or "").split())[:320]
+                out.append(
+                    f"- P{pid} {label} · {what} · {p.get('choices') or ''} · "
+                    f"reach {p.get('reach')}, shares {p.get('shares') or 0}, "
+                    f"saves {p.get('saves') or 0}, score {p['score']} · {p.get('posted', '')}")
+        out.append("")
+    return "\n".join(out).strip()
+
+
+def validate_principles(principles, sources_text, perf_text=""):
     """Keep only principles whose quote really appears in the sources.
+    A quote found only in the PERFORMANCE block must cite >= 2 post ids.
     Returns (kept, dropped_reasons)."""
     src = _norm(sources_text)
+    perf = _norm(perf_text)
     kept, dropped = [], []
     for p in principles or []:
         if not isinstance(p, dict):
@@ -133,8 +204,13 @@ def validate_principles(principles, sources_text):
         if len(quote) < 6:
             dropped.append(f"no quote: {text[:50]}")
             continue
-        if _norm(quote) not in src:
+        in_src = _norm(quote) in src
+        in_perf = bool(perf) and _norm(quote) in perf
+        if not (in_src or in_perf):
             dropped.append(f"quote not in sources: \"{quote[:50]}\"")
+            continue
+        if in_perf and not in_src and len(set(PERF_ID.findall(source))) < 2:
+            dropped.append(f"performance principle cites < 2 posts: {text[:50]}")
             continue
         if not source:
             dropped.append(f"no source: {text[:50]}")
@@ -179,8 +255,9 @@ def render(principles, version, changes, previous_md, n_sources):
              "# What Marcus wants — the taste brief",
              f"Distilled {datetime.now():%Y-%m-%d %H:%M} by taste_brief.py {VERSION} "
              f"from taste/feedback.md, references.md and outcomes.md "
-             f"({n_sources} source item(s)). Every line quotes Marcus or the "
-             f"team and names where it came from; anything uncited was dropped. "
+             f"({n_sources} source item(s)). Every line quotes Marcus, the "
+             f"team, or the measured performance of 2+ posts (P ids) and names "
+             f"where it came from; anything uncited was dropped. "
              f"To correct a line, write in the Taste Notes tab.",
              ""]
     if not principles:
@@ -275,11 +352,17 @@ def distill(force=False):
             return False, "memory repo clone failed"
         tdir = os.path.join(mem, "taste")
         feedback = _read(os.path.join(tdir, "feedback.md"))
+        try:
+            performance = build_performance(
+                json.loads(_read(os.path.join(tdir, "outcomes.json")) or "[]"))
+        except Exception as e:
+            log(f"performance unavailable ({type(e).__name__})")
+            performance = ""
         references = _read(os.path.join(tdir, "references.md"))
         outcomes = _read(os.path.join(tdir, "outcomes.md"))
         previous = _read(os.path.join(tdir, "brief.md"))
         sources = feedback + "\n" + references
-        if len(_norm(sources)) < MIN_SOURCE_CHARS:
+        if len(_norm(sources + performance)) < MIN_SOURCE_CHARS:
             return False, "nothing to distill yet (no feedback or references)"
 
         fp = _fingerprint(mem)
@@ -292,6 +375,7 @@ def distill(force=False):
         prompt = template.format(
             feedback=feedback[:12000], references=references[:8000],
             outcomes=outcomes[:6000], previous=previous[:4000] or "(none yet)",
+            performance=performance[:6000] or "(no lane has enough measured posts yet)",
             max_principles=MAX_PRINCIPLES, out_path=out_path)
         ok, result = invoke_claude_json(
             prompt, workdir, out_path, schema=SCHEMA, stage="taste_brief",
@@ -299,7 +383,8 @@ def distill(force=False):
         if not ok:
             return False, f"distill call failed: {str(result)[:120]}"
 
-        kept, dropped = validate_principles(result.get("principles"), sources)
+        kept, dropped = validate_principles(result.get("principles"), sources,
+                                            performance)
         for d in dropped:
             log(f"  dropped: {d}")
         version = _next_version(previous)

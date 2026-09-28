@@ -1,5 +1,8 @@
-<!-- VERSION: 2026-09-16.v5 -->
+<!-- VERSION: 2026-09-23.v6 -->
 <!-- CHANGELOG
+     2026-09-23.v6 — People rule: people allowed (full figures OK) if the face is
+       hidden or turned away. The remark flags only a VISIBLE FACE, never "a person
+       despite the brief" (there is no no-people brief). Alt text still describes people.
      2026-09-16.v5 — {taste_brief} before the style routing: Marcus's distilled,
        cited principles from every lane. Calibrates voice; routing unchanged.
      2026-09-07.v4 — Locked 5-line format replaced by a register of 7 STYLES with
@@ -131,7 +134,7 @@ One per image, in carousel order: 1-2 sentences literally describing the image (
 
 # FLAGS
 
-Note anything Marcus should know before publishing — AI artifacts (garbled text, warped objects), a person appearing despite the brief, color inconsistency across the carousel. These go in "remark" (empty string if none).
+Note anything Marcus should know before publishing — AI artifacts (garbled text, warped objects), a VISIBLE, recognisable face (people themselves are fine, do not flag them: PEOPLE RULE (Marcus, 2026-09-23): people are ALLOWED, including full figures, as long as the face is hidden, turned away, out of frame or asleep. A visible, recognisable face is the only people problem.), color inconsistency across the carousel. These go in "remark" (empty string if none).
 
 # OUTPUT
 

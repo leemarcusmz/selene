@@ -1,7 +1,7 @@
 """
 taste_store.py — ONE taste layer for all three lanes
 =============================================================================
-VERSION 1.3 — 2026-09-16
+VERSION 1.4 — 2026-09-23
 
 THE DECISION (Marcus, 2026-09-16)
     Keep the image, educational and reel flows SEPARATE — the flows differ —
@@ -39,6 +39,14 @@ RATE LIMIT
     `python3 taste_store.py --sync` forces one.
 
 CHANGELOG
+    1.4  2026-09-23  OUTCOMES SAY WHAT THE POST WAS. Image-lane carousel rows
+                     were just "row #N", so the brief could see a post did well
+                     but not what it showed. Now joined to the Generation Queue:
+                     product + the opening of Prompt 1 (the scene). Educational
+                     rows keep their topic ref; manual rows keep their caption
+                     opening. Also adds a `score` per row (taste_brief.perf_score:
+                     reach + weight x (shares + saves), Marcus's goal metric
+                     2026-09-23). Lookups fail open: no sheet -> old "row #N".
     1.3  2026-09-16  Reference SETS (reference_drive 1.1): a folder of
                      screenshots that is one post becomes ONE row in
                      references.md carrying its structure note and Marcus's
@@ -68,7 +76,7 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.3"
+VERSION = "1.4"
 TASTE_DIR = "taste"
 SYNC_EVERY_HOURS = getattr(config, "TASTE_SYNC_EVERY_HOURS", 6)
 STAMP_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-sync.stamp")
@@ -292,6 +300,7 @@ def collect_outcomes():
                 })
     except Exception as e:
         log(f"reel outcomes unavailable ({type(e).__name__})")
+    queue = None
     try:
         import post_metrics
         ps = post_metrics.load_state()
@@ -299,10 +308,19 @@ def collect_outcomes():
             label, m = post_metrics.latest(rec)
             if not m:
                 continue
+            what = rec.get("ref", sc)
+            if rec.get("lane", "images") == "images":
+                if queue is None:
+                    try:
+                        queue = _sheet_values(config.GOOGLE_SHEET_ID, config.GOOGLE_SHEET_NAME)
+                    except Exception as e:
+                        log(f"queue unavailable for outcome join ({type(e).__name__})")
+                        queue = []
+                what = _describe_image_row(what, queue)
             out.append({
                 "lane": rec.get("lane", "images"),
                 "posted": (rec.get("timestamp") or rec.get("posted") or "")[:10],
-                "what": rec.get("ref", sc), "choices": rec.get("media_type", ""),
+                "what": what, "choices": rec.get("media_type", ""),
                 "window": label, "views": m.get("views"), "reach": m.get("reach"),
                 "likes": m.get("likes"), "comments": m.get("comments"),
                 "shares": m.get("shares"), "saves": m.get("saved"),
@@ -310,8 +328,40 @@ def collect_outcomes():
             })
     except Exception as e:
         log(f"carousel outcomes unavailable ({type(e).__name__})")
+    for r in out:
+        r["score"] = _score(r)
     out.sort(key=lambda r: r.get("posted", ""), reverse=True)
     return out
+
+
+def _score(r):
+    try:
+        import taste_brief
+        return taste_brief.perf_score(r)
+    except Exception:
+        return None
+
+
+def _describe_image_row(ref, queue):
+    """'row #30' -> 'row #30 · Percale Duvet Set in Desert Sand · scene: <Prompt 1 opening>'.
+    Queue row for post #N is list index N (header at 0). Fails open to ref."""
+    import re as _re
+    m = _re.search(r"row #(\d+)", ref or "")
+    if not m or not queue:
+        return ref
+    n = int(m.group(1))
+    try:
+        q = (queue[n] if len(queue) > n else []) + [""] * config.TOTAL_COLS
+        if str(q[config.COL_NUMBER]).strip() not in ("", str(n)):
+            return ref
+        prod = f"{q[config.COL_FABRIC].strip()} {q[config.COL_PRODUCT_TYPE].strip()}".strip()
+        if q[config.COL_VARIANT].strip():
+            prod += f" in {q[config.COL_VARIANT].strip()}"
+        scene = " ".join(str(q[config.COL_PROMPT_1]).split())[:220].replace("|", "/")
+        bits = [ref] + ([prod] if prod else []) + ([f"scene: {scene}"] if scene else [])
+        return " · ".join(bits)
+    except Exception:
+        return ref
 
 
 # =============================================================================
@@ -369,13 +419,13 @@ def _md_outcomes(rows):
              f"Generated {_now()} by taste_store.py {VERSION} from reel_metrics "
              f"and post_metrics. Windows are fixed ages (72h, 7d) so numbers "
              f"are comparable across posts and lanes. Never edit.",
-             "", "| lane | posted | what | choices | window | views | reach | likes | comments | shares | saves | watch s |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+             "", "| lane | posted | what | choices | window | views | reach | likes | comments | shares | saves | watch s | score |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
         v = lambda k: "" if r.get(k) is None else r[k]
         lines.append(f"| {r['lane']} | {r['posted']} | {r['what']} | {r['choices']} | "
                      f"{r['window']} | {v('views')} | {v('reach')} | {v('likes')} | "
-                     f"{v('comments')} | {v('shares')} | {v('saves')} | {v('watch_s')} |")
+                     f"{v('comments')} | {v('shares')} | {v('saves')} | {v('watch_s')} | {v('score')} |")
     lines.append("")
     return "\n".join(lines)
 
