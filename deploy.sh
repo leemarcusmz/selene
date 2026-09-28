@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-# deploy.sh  v2.1  (2026-09-28)
-# v2.1: adds selene-deploy.timer/.service (bin/autodeploy.sh) — installed by
-#       the same loop below, so after ONE manual deploy every later push to
-#       production deploys itself within 5 minutes.
+# deploy.sh  v2.1.1  (2026-09-28)
+# v2.1.1: selene-deploy.timer REMOVED again — ~/runner/bin/deploy-all.sh
+#         (runner-deploy.timer, every 15 min, all ventures) already pulls
+#         production and runs this script. Two deployers were one too many.
+#         Rule: push to production, wait <=15 min. Never edit files on the VPS
+#         (deploy-all resets --hard to origin/production).
+# v2.1: (withdrawn) added a 5-minute selene-deploy timer.
 # v2.0.1: the educational SERVER unit is selene-edu-server.service. v2.0 named
 #         it selene-edu.service, which collided with the edu *poke* unit of the
 #         same name - the poke won and the 5002 server was never installed.
