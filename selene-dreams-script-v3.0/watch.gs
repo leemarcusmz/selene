@@ -1,7 +1,7 @@
 /**
  * =============================================================================
  * Selene Dreams — Silence Watchdog
- * watch.gs — VERSION 1.0 — 2026-09-28
+ * watch.gs — VERSION 1.0.1 — 2026-09-29
  * =============================================================================
  * WHY THIS EXISTS
  *   2026-09-24 → 09-28: nothing published for four days and nothing said so.
@@ -39,7 +39,7 @@
  *
  * RULES OBEYED
  *   - Every global here is WD_ / wd-prefixed (feedback_gs_globals). It reads
- *     WEBHOOK_URL, GS_* from Code.gs and ghFetch_/PICKER_* from picker.gs,
+ *     WEBHOOK_URL, GS_* from Code.gs and ghToken_/PICKER_* from picker.gs,
  *     and RV_EDU_SHEET_ID from review.gs — all shared project scope.
  *   - Never throws out of the trigger: every check is wrapped, and a check
  *     that cannot be evaluated is reported as a failure ("could not check"),
@@ -48,10 +48,15 @@
  * VERSION vs BUILD: VERSION moves on features, WD_BUILD on every code change.
  * CHANGELOG
  *   1.0  2026-09-28  First build. Four checks, one email, daily trigger.
+ *   1.0.1 2026-09-29 Shortlist check fetched GitHub through picker.gs ghFetch_(),
+ *                    which returns body text and THROWS on non-200 — so the
+ *                    check always reported "could not check". Now calls
+ *                    UrlFetchApp directly with muteHttpExceptions and reads
+ *                    the status code itself (404 = shortlist missing).
  * =============================================================================
  */
 
-var WD_BUILD = '2026-09-28.a';
+var WD_BUILD = '2026-09-29.a';
 var WD_EMAIL = 'lee.marcusmz@gmail.com';
 var WD_HOUR = 9;                   // daily run, sheet timezone
 var WD_MAX_QUIET_DAYS = 3;         // no post for this long = alert
@@ -180,8 +185,14 @@ function wdCheckShortlist_() {
   var monday = new Date(now.getTime() - ((dow - 1) * 86400000));
   var week = Utilities.formatDate(monday, tz, 'yyyy-MM-dd');
   var path = SHORTLIST_DIR + '/shortlist-' + week + '.json';
-  var resp = ghFetch_('https://api.github.com/repos/' + PICKER_REPO +
-                      '/contents/' + path + '?ref=' + PICKER_BRANCH);
+  // Not ghFetch_(): that helper returns text and throws on any non-200, and a
+  // 404 here is the answer we want, not an error.
+  var resp = UrlFetchApp.fetch('https://api.github.com/repos/' + PICKER_REPO +
+                               '/contents/' + path + '?ref=' + PICKER_BRANCH, {
+    muteHttpExceptions: true,
+    headers: { Authorization: 'token ' + ghToken_(),
+               Accept: 'application/vnd.github+json' }
+  });
   var code = resp.getResponseCode();
   if (code === 200) return { ok: true, detail: path + ' exists' };
   if (code === 404) return { ok: false, detail: path + ' missing — Monday research or screening did not finish' };

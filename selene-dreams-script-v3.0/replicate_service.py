@@ -1,9 +1,16 @@
 # =============================================================================
 # Selene Dreams — Image Generation Script v3.0
 # replicate_service.py — Nano Banana Pro image generation via Replicate
-# VERSION 1.1 — 2026-08-26
+# VERSION 1.2 — 2026-09-29
 #
 # CHANGELOG
+#   1.2  2026-09-29  Transient-auth retry. 2026-09-28 23:58 row #41 died on
+#                    "401 Invalid token" from POST /v1/files — 57 seconds after
+#                    the SAME token got a 201 from the same endpoint, while a
+#                    second thread was uploading too. The token verified fine
+#                    afterwards (GET /v1/account → 200). A 401 is now retried
+#                    twice, 20 s then 40 s apart, OUTSIDE the capacity budget;
+#                    a token that is really dead still fails within ~1 minute.
 #   1.1  2026-08-26  Capacity retries. Google's Nano Banana capacity has been
 #                    saturating for days (E003 "high demand" — see Google's own
 #                    forum), and three real generation runs across 17 hours all
@@ -72,6 +79,19 @@ def _is_retryable(err):
     return any(m.lower() in text.lower() for m in _RETRYABLE_MARKERS)
 
 
+# Transient-auth policy (v1.2): a 401 right after a 201 with the same token is
+# Replicate's side, not ours. Two quick retries; a genuinely dead token still
+# fails in about a minute instead of the capacity budget's half hour.
+AUTH_RETRIES = 2
+AUTH_BACKOFF_START = 20
+_TRANSIENT_AUTH_MARKERS = ("401", "invalid token", "unauthenticated", "unauthorized")
+
+
+def _is_transient_auth(err):
+    text = str(err).lower()
+    return any(m in text for m in _TRANSIENT_AUTH_MARKERS)
+
+
 def _client():
     """Return a Replicate client bound to the configured token."""
     token = config.REPLICATE_API_TOKEN
@@ -117,10 +137,21 @@ def generate_image_with_flux(product_image_bytes, reference_image_bytes_list, pr
     """
     attempt = 0
     delay = CAPACITY_BACKOFF_START
+    auth_attempt = 0
+    auth_delay = AUTH_BACKOFF_START
     while True:
         try:
             return _generate_once(product_image_bytes, reference_image_bytes_list, prompt)
         except Exception as e:
+            if _is_transient_auth(e) and not _is_retryable(e):
+                if auth_attempt >= AUTH_RETRIES:
+                    raise
+                auth_attempt += 1
+                print(f"  Auth hiccup ({str(e).strip().splitlines()[0][:80]}) — "
+                      f"retry {auth_attempt}/{AUTH_RETRIES} in {auth_delay}s", flush=True)
+                time.sleep(auth_delay)
+                auth_delay *= 2
+                continue
             if attempt >= CAPACITY_RETRIES or not _is_retryable(e):
                 raise
             attempt += 1

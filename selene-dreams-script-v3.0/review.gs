@@ -1,7 +1,7 @@
 /**
  * review.gs — Selene Dreams · the approval screen
  * ============================================================================
- * VERSION 2.5 — 2026-09-16          (page footer shows REVIEW_BUILD)
+ * VERSION 2.6 — 2026-09-29          (page footer shows REVIEW_BUILD)
  *
  * WHAT THIS IS
  *   The single human gate in the pipeline. Every post that has finished
@@ -42,6 +42,18 @@
  *   slot-machine, not the wallet.
  *
  * CHANGELOG
+ *   2.6  2026-09-29  READY-FOR-REVIEW MAIL, SAME DAY. Build 2026-09-29.a.
+ *                    The only review mail was the Monday digest, sent ~00:13
+ *                    Monday — hours BEFORE the week's picks are made, so every
+ *                    freshly generated post waited seven days for its first
+ *                    mention (rows 36/39 sat unread through two digests; #40
+ *                    generated Mon 28 Sep 23:58 would not have been named until
+ *                    5 Oct). reviewNotifyTick now also mails
+ *                    "[SELENE DREAMS] Ready for review - row(s) …" to
+ *                    RV_DIGEST_EMAILS within 30 min of a row becoming
+ *                    review-ready, once per row (rv_notified.ready; pruned
+ *                    when the row moves on, so a reroll notifies again). The
+ *                    Monday digest is unchanged and stays the full worklist.
  *   2.5  2026-09-16  Seven review-page fixes from Marcus's 2026-09-16 list.
  *                    Build 2026-09-16.a.
  *                    1 FIX: approving an EDUCATIONAL post left it in WAITING ON
@@ -165,7 +177,7 @@
  * ============================================================================
  */
 
-var REVIEW_BUILD = '2026-09-16.a';
+var REVIEW_BUILD = '2026-09-29.a';
 
 // ── Sheet geometry ──────────────────────────────────────────────────────────
 var RV_GS_TAB          = 'Generation Status';
@@ -1798,7 +1810,8 @@ function reviewNotifyTick() {
   var seen;
   try { seen = JSON.parse(props.getProperty('rv_notified') || '{}'); }
   catch (e) { seen = {}; }
-  seen.hold = seen.hold || [];
+  seen.hold  = seen.hold  || [];
+  seen.ready = seen.ready || [];
 
   var tz  = rvSs_().getSpreadsheetTimeZone();
   var now = new Date();
@@ -1829,13 +1842,43 @@ function reviewNotifyTick() {
     });
   }
 
+  // ── Ready-for-review mail (v2.6): any row that became review-ready since the
+  //    last tick, both lanes, once per row. This is what makes a Monday-night
+  //    pick reviewable on Tuesday instead of the following Monday.
+  var pendingNow = rvPending_().concat(rvEduPending_());   // no images — cheap
+  var readyIds   = pendingNow.map(function (p) { return String(p.n); });
+  var newReady   = pendingNow.filter(function (p) {
+    return seen.ready.indexOf(String(p.n)) === -1;
+  });
+  if (newReady.length) {
+    var rAi  = newReady.filter(function (p) { return p.lane !== 'edu'; })
+                       .map(function (p) { return '#' + p.num + ' (' + p.title + ')'; });
+    var rEdu = newReady.filter(function (p) { return p.lane === 'edu'; })
+                       .map(function (p) { return '#' + p.num + ' (' + p.title + ')'; });
+    var rLines = ['Date: ' + rvTodayUS_(), 'Flow Hub: ' + hub, '',
+                  newReady.length + ' new post(s) ready for review:'];
+    if (rAi.length)  rLines.push('  AI carousel: ' + rAi.join(', '));
+    if (rEdu.length) rLines.push('  Educational: ' + rEdu.join(', '));
+    if (pendingNow.length > newReady.length) {
+      rLines.push('', (pendingNow.length - newReady.length) +
+                  ' older post(s) still waiting on you as well.');
+    }
+    rLines.push('', 'Review Link:', url);
+    MailApp.sendEmail({
+      to: RV_DIGEST_EMAILS.join(','),
+      subject: '[SELENE DREAMS] Ready for review - row(s) ' +
+               newReady.map(function (p) { return p.num; }).join(', '),
+      body: rLines.join('\n')
+    });
+  }
+
   // ── The Weekly Action digest: one send per week, on RV_DIGEST_DOW, covering
   //    BOTH lanes. Everything still waiting is listed, not only what is new,
   //    because a weekly mail is a worklist rather than an alert.
   var dow  = Number(Utilities.formatDate(now, tz, 'u'));   // 1 = Mon … 7 = Sun
   var week = Utilities.formatDate(now, tz, 'YYYY-ww');
   if (dow === RV_DIGEST_DOW && seen.digestWeek !== week) {
-    var pending = rvPending_().concat(rvEduPending_());    // no images — stays cheap
+    var pending = pendingNow;
     var ai  = pending.filter(function (p) { return p.lane !== 'edu'; })
                      .map(function (p) { return p.num; });
     var edu = pending.filter(function (p) { return p.lane === 'edu'; })
@@ -1864,7 +1907,8 @@ function reviewNotifyTick() {
     seen.digestWeek = week;
   }
   props.setProperty('rv_notified',
-                    JSON.stringify({ hold: holdNow, digestWeek: seen.digestWeek || '' }));
+                    JSON.stringify({ hold: holdNow, ready: readyIds,
+                                     digestWeek: seen.digestWeek || '' }));
 }
 
 /** Run ONCE from the editor. Idempotent — replaces any existing trigger. */
