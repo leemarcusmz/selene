@@ -22,7 +22,9 @@ THEN copy it to the runner (it is gitignored by `token.json*`, never commit):
   ssh vps 'cd ~/runner/selene/selene-dreams-script-v3.0 && ../.venv/bin/python mailer.py --test'
 
 CHANGELOG
-  1.0  2026-09-30  First version, modelled on reauth_drive.py 1.0.
+  1.0  2026-09-30  First version, modelled on reauth_drive.py 1.0. Verification is
+                   refresh + scope check: getProfile needs a read scope this
+                   token deliberately does not have (learned on first run).
 """
 import datetime
 import os
@@ -41,10 +43,15 @@ SCOPES = mailer.GMAIL_SCOPES
 
 
 def _verify(creds):
-    from googleapiclient.discovery import build
-    prof = build("gmail", "v1", credentials=creds, cache_discovery=False) \
-        .users().getProfile(userId="me").execute()
-    return prof["emailAddress"]
+    """gmail.send alone cannot call users.getProfile (that needs a read
+    scope), so 'verified' here means: the token refreshes and carries the
+    send scope. The real proof is `python3 mailer.py --test`."""
+    from google.auth.transport.requests import Request
+    creds.refresh(Request())
+    scopes = set(creds.scopes or [])
+    if not scopes & set(SCOPES):
+        raise RuntimeError(f"token lacks gmail.send (has {sorted(scopes)})")
+    return "send scope present, refresh OK — run `python3 mailer.py --test` to prove delivery"
 
 
 def check():
@@ -53,7 +60,7 @@ def check():
         return 1
     try:
         creds = mailer.gmail_credentials()
-        print(f"ALIVE — Gmail send token OK for {_verify(creds)}")
+        print(f"ALIVE — {_verify(creds)}")
         return 0
     except Exception as e:
         print(f"DEAD — {type(e).__name__}: {str(e)[:200]}")
@@ -73,7 +80,7 @@ def reauth():
     with open(TOKEN, "w") as f:
         f.write(creds.to_json())
     os.chmod(TOKEN, 0o600)
-    print(f"token.json.gmail written · authorised as {_verify(creds)}")
+    print(f"token.json.gmail written · {_verify(creds)}")
     print("next: scp token.json.gmail vps:~/runner/selene/selene-dreams-script-v3.0/")
     return 0
 
