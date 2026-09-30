@@ -1,8 +1,16 @@
 # =============================================================================
-# Selene Dreams — Weekly Research Runner v2.1 (2026-09-30)
+# Selene Dreams — Weekly Research Runner v2.1.1 (2026-09-30)
 # research_runner.py — Run the Monday IG research locally, in phases
 # =============================================================================
 # CHANGELOG
+#   2.1.1 2026-09-30 Phase 3 gets the same exclude list + account rotation
+#                    (research-p3 v2). The v2.1 dry run for 2026-09-28 proved
+#                    the rules hold (pool clean, nothing to enforce) but left
+#                    only 10 candidates, 1 from a fresh account: phase 3 had
+#                    fetched images for 35 of ~173 posts and 23 of those were
+#                    already spent. The memory clone now happens before phase
+#                    3 so the longlist can skip spent posts and go wide on
+#                    fresh accounts.
 #   2.1  2026-09-30  RESEARCH LANE v2.1 — the pool stops repeating itself.
 #                    Diagnosis (shortlists 24 Aug-28 Sep): already-offered and
 #                    already-PICKED posts came back week after week
@@ -73,7 +81,7 @@ import research_pool
 from caption_runner import clone_memory, invoke_claude, load_prompt, log
 import social_calendar
 
-VERSION = "2.1"
+VERSION = "2.1.1"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WORK_ROOT = os.path.join(BASE_DIR, "_research")
@@ -242,30 +250,15 @@ def _run_research(week, spacing, from_phase, no_push=False):
             return False, msg
         _sleep(spacing, "same-path Apify spacing before the images call")
 
-    # ---- Phase 3: image URLs ----------------------------------------------
-    if from_phase <= 3:
-        ok, msg = _run_phase("phase 3/4 · images", "research-p3", workdir,
-                             step3, week, {"step1_file": step1})
-        if not ok:
-            return False, msg
-
-    for path in (step2, step3):
-        if not os.path.exists(path):
-            log(f"  NOTE: {os.path.basename(path)} missing — phase 4 will "
-                f"work without it and should say so in the report.")
-
-    # ---- Phase 4: analyse, criticise, publish -----------------------------
+    # ---- Memory clone (v2.1.1: before phase 3, so the longlist knows what is
+    # already spent) ---------------------------------------------------------
     memroot = tempfile.mkdtemp(prefix=f"selene_research_{week}_")
     try:
         mem = clone_memory(memroot)
         if not mem:
-            return False, ("memory repo clone failed — phase 4 needs "
-                           "brand-guide.md and somewhere to publish")
-        # Upcoming promotions steer the PRODUCT mapping (pick linen references
-        # while a linen promo is three weeks out), never the caption voice —
-        # discount urgency is explicitly off-brand. Degrades to a plain "no
-        # promotions / could not read" sentence if the sheet is unreachable.
-        calendar_block = social_calendar.as_prompt_block(logger=log)
+            return False, ("memory repo clone failed — phases 3 and 4 need "
+                           "the offered/picked history, brand-guide.md and "
+                           "somewhere to publish")
         # v2.1: what has already been offered or picked, and which accounts
         # are fresh. Read from the clone, so it is exactly what the repo says.
         hist = research_pool.history(mem, week)
@@ -273,13 +266,36 @@ def _run_research(week, spacing, from_phase, no_push=False):
             f"{len(hist['picked'])} picked, {len(hist['recent_accounts'])} "
             f"account(s) offered in the last {research_pool.FRESH_WEEKS} weeks "
             f"({len(hist['weeks'])} earlier week(s) read)")
+        exclude_block = research_pool.exclude_block(hist)
+        accounts_block = research_pool.accounts_block(hist, week)
+
+        # ---- Phase 3: image URLs ------------------------------------------
+        if from_phase <= 3:
+            ok, msg = _run_phase("phase 3/4 · images", "research-p3", workdir,
+                                 step3, week, {"step1_file": step1,
+                                               "exclude_block": exclude_block,
+                                               "accounts_block": accounts_block})
+            if not ok:
+                return False, msg
+
+        for path in (step2, step3):
+            if not os.path.exists(path):
+                log(f"  NOTE: {os.path.basename(path)} missing — phase 4 will "
+                    f"work without it and should say so in the report.")
+
+        # ---- Phase 4: analyse, criticise, publish -------------------------
+        # Upcoming promotions steer the PRODUCT mapping (pick linen references
+        # while a linen promo is three weeks out), never the caption voice —
+        # discount urgency is explicitly off-brand. Degrades to a plain "no
+        # promotions / could not read" sentence if the sheet is unreachable.
+        calendar_block = social_calendar.as_prompt_block(logger=log)
         ok, msg = _run_phase(
             "phase 4/4 · report", "research-p4", workdir, None, week,
             {"step1_file": step1, "step2_file": step2, "step3_file": step3,
              "mem": mem, "calendar": calendar_block,
              "taste_brief": _taste_brief_block(),
-             "exclude_block": research_pool.exclude_block(hist),
-             "accounts_block": research_pool.accounts_block(hist, week),
+             "exclude_block": exclude_block,
+             "accounts_block": accounts_block,
              "publish_instruction": (PUBLISH_DRY if no_push
                                      else PUBLISH_LIVE.format(week=week))},
             timeout=3600)
