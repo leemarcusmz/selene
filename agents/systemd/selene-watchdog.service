@@ -1,0 +1,13 @@
+# selene-watchdog.service  v1.0  (2026-09-30)
+# Research-landed check, on the droplet, with the droplet's own token.
+# bin/research-watchdog.sh is inert without LIVE. Replaces the cloud
+# "Selene Weekly Research Watchdog" task (retired 30 Sep 2026).
+[Unit]
+Description=Selene watchdog: did this week's research land
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/runner/selene/bin/research-watchdog.sh
+StandardOutput=append:%h/runner/logs/selene-watchdog.log
+StandardError=inherit

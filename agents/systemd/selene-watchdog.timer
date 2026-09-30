@@ -1,0 +1,14 @@
+# selene-watchdog.timer  v1.0  (2026-09-30)
+# Mon 18:00 HKT (droplet TZ is Asia/Hong_Kong): eight hours after the 10:00
+# research poke, same slot the cloud watchdog used. Persistent=true fires a
+# missed Monday on next boot.
+[Unit]
+Description=Selene watchdog timer: Monday 18:00
+
+[Timer]
+OnCalendar=Mon 18:00
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

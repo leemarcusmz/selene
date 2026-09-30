@@ -5,6 +5,8 @@
 # Holds no secrets since 2026-08-19 (they live in .env) and IS committed.
 #
 # CHANGELOG
+#   2026-09-30  STAGE_MODELS["deepdive"] (opus/high) for deepdive_runner.py, the
+#               monthly IG deep-dive that now runs on the droplet.
 #   2026-09-22  .env.local overlay + export of the two SELENE_* path keys to
 #               os.environ. reel_config.py and caption_runner.py read those
 #               via os.environ, which the private _ENV dict never reached, so
@@ -248,6 +250,7 @@ STAGE_MODELS = {
     "default":        {"model": "sonnet", "effort": "high"},
     "research":       {"model": "sonnet", "effort": "high"},
     "critic":         {"model": "opus",   "effort": "high"},
+    "deepdive":       {"model": "opus",   "effort": "high"},
     "screening":      {"model": "sonnet", "effort": "high"},
     "prompts":        {"model": "sonnet", "effort": "high"},
     "caption":        {"model": "sonnet", "effort": "high"},

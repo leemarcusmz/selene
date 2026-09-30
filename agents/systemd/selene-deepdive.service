@@ -1,0 +1,15 @@
+# selene-deepdive.service  v1.0  (2026-09-30)
+# Monthly IG deep-dive, on the droplet: deepdive_runner.py clones the memory
+# repo with the runner's own token, runs the analysis with claude -p, pushes
+# reports/monthly-deepdive-YYYY-MM.md and emails it. Inert without LIVE.
+# Replaces the cloud "Selene Monthly IG Deep-Dive" task (retired 30 Sep 2026).
+[Unit]
+Description=Selene monthly IG deep-dive
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=%h/runner/selene/selene-dreams-script-v3.0
+ExecStart=%h/runner/selene/.venv/bin/python %h/runner/selene/selene-dreams-script-v3.0/deepdive_runner.py
+StandardOutput=append:%h/runner/logs/selene-deepdive.log
+StandardError=inherit

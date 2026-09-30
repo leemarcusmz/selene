@@ -1,0 +1,12 @@
+# selene-deepdive.timer  v1.0  (2026-09-30)
+# 1st of the month, 10:00 HKT (the cloud task ran 02:00 UTC = 10:00 HKT).
+[Unit]
+Description=Selene deep-dive timer: 1st of the month 10:00
+
+[Timer]
+OnCalendar=*-*-01 10:00
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
