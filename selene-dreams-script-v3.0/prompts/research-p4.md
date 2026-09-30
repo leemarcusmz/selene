@@ -1,4 +1,4 @@
-<!-- VERSION: 2026-09-16.v6 — + @hommey in the tracked brand feeds -->
+<!-- VERSION: 2026-09-30.v7 — research lane v2.1: taste brief in Step A, HARD EXCLUDE + account rotation in Step C(e), account field + fresh-account floor in the JSON, {publish_instruction} for dry runs. v6 2026-09-16: + @hommey in the tracked brand feeds -->
 # PHASE 4 of 4 — analyse, self-criticise, publish
 
 All the week's raw data is already collected. No further API calls of any kind.
@@ -7,6 +7,11 @@ INPUTS: `{step1_file}` (posts, stats, hashtags) · `{step2_file}` (captions, com
 
 ## Step A — read memory
 `{mem}/brand-guide.md` FIRST — its photography rules and 12-point rubric govern every candidate decision; if it conflicts with anything else, it wins. Then `trends.md`, the 2-3 most recent `reports/`, `copy-playbook.md`, `keyword-bank.md`, `hooks-library.md`, `metrics.csv`, `selections.md`, `objections.md`, and — for the own-brand section — `post-outcomes.csv`, `generation-scores.csv` and `prompt-playbook.md`.
+
+### WHAT MARCUS WANTS — the taste brief (distilled from his feedback, his own reference images and measured post performance; the same brief every writer in the pipeline reads)
+{taste_brief}
+
+Use it as the tiebreaker above engagement when two candidates fit the brand-guide equally: a reference that matches these principles (bed placed plainly in a wild landscape, caught-in-the-moment window light, loose lived-in folds, one undone object on a made bed, layered textures with a minimal room) is worth more than one that merely scores well. Say in a candidate's note which principle it serves.
 
 ## Step B — analyse
 - **RECENCY GATE (apply before any ranking)**: a post is eligible for rankings, "top post", "best this week", trend, hook-taxonomy and velocity claims ONLY if its timestamp is within 45 days of the pull date. Older items leak through the scrape (a 2025-03-29 brooklinen post appeared on 2026-08-17; a 5-week-old sijohome post was wrongly called "this week's best" on 2026-08-10). Check the STALE POSTS list in the phase-1 DATA NOTES and exclude those URLs. Out-of-window posts may be cited ONLY as explicitly-labelled historical context, never as current performance. Say in the data notes how many you excluded.
@@ -38,7 +43,16 @@ Brand fit comes FIRST; engagement rate is only a tiebreaker.
 
 (d) Each candidate's note must cite WHY it plausibly fits — which rubric qualities.
 
-(e) Dedup against past shortlists and apply the selections.md taste model.
+(e) NEVER RE-OFFER (research lane v2.1, 2026-09-30). The old rule — retire a post only after it was passed twice — re-offered DcCN9qWj7Gy four times and let the same five accounts fill every week. The rule is now absolute and enforced in code after you finish:
+
+{exclude_block}
+
+{accounts_block}
+
+  - A post already offered or picked is out, full stop — do not "re-surface a strong one", do not treat a previous pick as proof of fit. Its lesson lives in the taste brief; the post itself is spent.
+  - **Cap: 2 posts per account.** If @sijohome has five good posts this week, offer its best two and say in the data notes that three were held by the cap.
+  - **Fresh-account floor: at least 8 candidates from accounts marked fresh above** (never offered, or not offered in the last 4 weeks) — from the tracked-brand list where a tracked brand happens to be fresh, otherwise from the hashtag frontier. The screener reserves 3 of its 8 slots for fresh accounts, and it can only fill them from what you give it. If fewer than 8 fresh-account posts clear the hard rejects, offer all that do and say so — the rule is "fresh first when it is on-brand", not "fresh at any cost". Brand fit still decides ranking within the pool.
+  - Still read `selections.md` for the taste signals in its picks and passes; just never for permission to re-offer.
 
 (g) UPCOMING PROMOTIONS — steer the product mapping, nothing else (added 2026-08-17). The lead time from this report to a published post is one to two weeks, so a reference chosen now should suit what is about to be promoted.
 
@@ -60,16 +74,16 @@ Then act: DELETE every UNSUPPORTED claim, rewrite WEAK ones with explicit hedgin
 ## Step E — write and push
 In `{mem}`:
 
-1. `reports/research-report-{week}.md` — sections: 1 Data notes · 2 Top performers per tier (raw + rate) · 3 Hook analysis with 2-3 verbatim standouts · 4 Hashtag frontier · 5 Cross-brand drivers, trend deltas, cadence/timing HKT, format mix · 6 Own-brand check · 7 Comment intent (counts, 5 verbatim objections, 3 verbatim purchase-intent, recurring vs new, and which objection Selene is best placed to answer — say plainly if mining failed) · 8 Candidate pool · 9 Recommended plays (max 5) · 10 Confidence — what the critic cut or hedged and what this week's data cannot support.
+1. `reports/research-report-{week}.md` — sections: 1 Data notes (include the hygiene line: how many posts the HARD EXCLUDE removed from consideration, how many were held by the per-account cap, and how many fresh-account candidates made the pool) · 2 Top performers per tier (raw + rate) · 3 Hook analysis with 2-3 verbatim standouts · 4 Hashtag frontier · 5 Cross-brand drivers, trend deltas, cadence/timing HKT, format mix · 6 Own-brand check · 7 Comment intent (counts, 5 verbatim objections, 3 verbatim purchase-intent, recurring vs new, and which objection Selene is best placed to answer — say plainly if mining failed) · 8 Candidate pool · 9 Recommended plays (max 5) · 10 Confidence — what the critic cut or hedged and what this week's data cannot support.
 2. `candidates/candidates-{week}.json` (create the dir if absent) — complete, valid JSON:
-`{{"week":"{week}","entries":[{{"n":1,"source":"@brand or #tag","type":"CAROUSEL|IMAGE|VIDEO-cover","postUrl":"https://...","concept":"one-line visual concept","caption":"the post's original caption, verbatim, from {step2_file} (empty string if not captured)","likes":269,"comments":12,"engagement":"269 likes · 12 cmts","product":{{"fabric":"...","productType":"...","variant":"..."}},"images":["slide url 1","..."]}}]}}`
+`{{"week":"{week}","entries":[{{"n":1,"source":"@brand or #tag","account":"@handle that posted it (always the account, even for hashtag finds)","freshAccount":true,"type":"CAROUSEL|IMAGE|VIDEO-cover","postUrl":"https://...","concept":"one-line visual concept","caption":"the post's original caption, verbatim, from {step2_file} (empty string if not captured)","likes":269,"comments":12,"engagement":"269 likes · 12 cmts","product":{{"fabric":"...","productType":"...","variant":"..."}},"images":["slide url 1","..."]}}]}}`
 Every image URL verbatim in slide order, from {step3_file}. `product` = one valid catalog combo:
 Cooling Blanket: Cream White, Ocean Breeze, Silver Mist · Gauze Blanket: Alabaster White, Shadow Gray, Soft Maple · Linen Duvet/Sheet Set: Alabaster White, Desert Sand, Stone Sage, Terracotta Blush · Percale Duvet/Sheet Set: Ash Gray, Desert Sand, Herb Sage, Icy White · Sateen Duvet/Sheet Set: Driftwood, Icy White, Ocean Breeze · Silk Eye Mask/Pillow Case: Alabaster White, Olive Sage, Pewter Gray, Warm Taupe · Tencel Duvet/Sheet Set: Deep Ocean, Dove Gray, Frost White, Stone Taupe
 3. Week entry at the TOP of `trends.md`, including the count of claims the critic cut or hedged.
 4. `metrics.csv` — a row per brand (date,username,followersCount,followsCount,postsCount; create with header if absent).
 5. `copy-playbook.md` attribution · `keyword-bank.md` Candidates section only · `objections.md` (create with a header if absent) — dated section with this week's classified objections and verbatim quotes, marking any that have now recurred 2+ weeks · `hooks-library.md` Observed section only (never touch Proven/Testing) · a `selections.md` stub if last week's picks are unlogged.
 
-Then: `git add -A && git commit -m "Weekly research {week}" && git push` (one retry; report failure honestly).
+{publish_instruction}
 
 Do NOT write the shortlist — the Mac visual screener views every image and produces it within the hour.
 

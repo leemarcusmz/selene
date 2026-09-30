@@ -1,7 +1,29 @@
 # =============================================================================
-# Selene Dreams — Weekly Research Runner v2.0 (2026-08-13)
+# Selene Dreams — Weekly Research Runner v2.1 (2026-09-30)
 # research_runner.py — Run the Monday IG research locally, in phases
 # =============================================================================
+# CHANGELOG
+#   2.1  2026-09-30  RESEARCH LANE v2.1 — the pool stops repeating itself.
+#                    Diagnosis (shortlists 24 Aug-28 Sep): already-offered and
+#                    already-PICKED posts came back week after week
+#                    (DcCN9qWj7Gy picked 4x), the same 4-5 accounts dominated,
+#                    and phase 4 never saw taste/brief.md. Now:
+#                    (a) research_pool.history() reads every earlier
+#                        candidates/shortlist file + every PICKED line and
+#                        hands phase 4 a HARD EXCLUDE list ({exclude_block})
+#                        and the account rotation ({accounts_block});
+#                    (b) {taste_brief} (taste_brief.brief_block("research"))
+#                        is injected into research-p4 v7 like every writer;
+#                    (c) after phase 4 the runner ENFORCES the rules on the
+#                        published candidates file — drops excluded posts,
+#                        caps 2 per account, tags account/freshAccount — and
+#                        pushes the corrected file if anything changed. The
+#                        prompt asks; the code guarantees.
+#                    (d) --no-push: dry run for a proof — phase 4 writes into
+#                        the clone but nothing is committed; the clone is
+#                        kept and its path printed. {publish_instruction}
+#                        carries the difference into the prompt.
+#   2.0  2026-08-13  Phased runner (see WHY v2 below).
 #
 # WHY v2: v1 handed the agent one enormous instruction that included
 # "sleep 950" between same-path Apify calls. That is unexecutable — Claude
@@ -32,9 +54,11 @@
 #   python3 research_runner.py --spacing 60    # faster, for testing
 #   python3 research_runner.py --from-phase 4  # reuse existing phase files
 #   python3 research_runner.py --week 2026-08-10
+#   python3 research_runner.py --from-phase 4 --week 2026-09-28 --no-push   # proof, nothing pushed
 # =============================================================================
 
 import argparse
+import json
 import os
 import shutil
 import sys
@@ -45,8 +69,11 @@ from datetime import datetime, timedelta
 
 import config
 import pipeline_state
+import research_pool
 from caption_runner import clone_memory, invoke_claude, load_prompt, log
 import social_calendar
+
+VERSION = "2.1"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WORK_ROOT = os.path.join(BASE_DIR, "_research")
@@ -135,15 +162,56 @@ def _sleep(seconds, why):
     time.sleep(seconds)
 
 
-def run_research(week=None, spacing=DEFAULT_SPACING, from_phase=1):
+def run_research(week=None, spacing=DEFAULT_SPACING, from_phase=1,
+                 no_push=False):
     week = week or monday_of_current_week().isoformat()
     with pipeline_state.stage(pipeline_state.RESEARCH, week=week) as st:
         return pipeline_state.finish(
-            _run_research(week, spacing, from_phase), st)
+            _run_research(week, spacing, from_phase, no_push), st)
 
 
-def _run_research(week, spacing, from_phase):
-    log(f"Weekly research for week {week} (local, phased)...")
+PUBLISH_LIVE = ('Then: `git add -A && git commit -m "Weekly research {week}" '
+                '&& git push` (one retry; report failure honestly).')
+PUBLISH_DRY = ("DRY RUN: write every file exactly as described, but do NOT "
+               "run git add, git commit or git push — leave the working tree "
+               "dirty. The runner inspects the files in place.")
+
+
+def _taste_brief_block():
+    try:
+        import taste_brief
+        return taste_brief.brief_block("research")
+    except Exception as e:
+        log(f"  taste brief unavailable ({type(e).__name__}) — phase 4 runs "
+            f"without it")
+        return "(taste brief unavailable this run)"
+
+
+def _enforce_pool(mem, week, hist):
+    """Re-apply the v2.1 rules to what phase 4 actually published.
+    Returns (changed, report_lines)."""
+    path = os.path.join(mem, "candidates", f"candidates-{week}.json")
+    if not os.path.exists(path):
+        return False, [f"no candidates-{week}.json in the clone — nothing to enforce"]
+    with open(path) as f:
+        data = json.load(f)
+    before = data.get("entries") or []
+    kept, report = research_pool.enforce(before, hist)
+    lines = research_pool.report_lines(report)
+    changed = json.dumps(kept, sort_keys=True) != json.dumps(before, sort_keys=True)
+    if changed:
+        data["entries"] = kept
+        data["hygiene"] = {"version": research_pool.VERSION, "week": week,
+                           "enforced": datetime.now().isoformat(timespec="seconds"),
+                           "dropped": report["dropped"]}
+        with open(path, "w") as f:
+            json.dump(data, f, indent=1, ensure_ascii=False)
+    return changed, lines
+
+
+def _run_research(week, spacing, from_phase, no_push=False):
+    log(f"Weekly research for week {week} (local, phased, runner v{VERSION}"
+        + (", NO-PUSH dry run" if no_push else "") + ")...")
 
     with open(os.path.join(BASE_DIR, "github_token.txt")) as f:
         token = f.read().strip()
@@ -198,14 +266,47 @@ def _run_research(week, spacing, from_phase):
         # discount urgency is explicitly off-brand. Degrades to a plain "no
         # promotions / could not read" sentence if the sheet is unreachable.
         calendar_block = social_calendar.as_prompt_block(logger=log)
+        # v2.1: what has already been offered or picked, and which accounts
+        # are fresh. Read from the clone, so it is exactly what the repo says.
+        hist = research_pool.history(mem, week)
+        log(f"  hygiene: {len(hist['offered'])} posts offered before, "
+            f"{len(hist['picked'])} picked, {len(hist['recent_accounts'])} "
+            f"account(s) offered in the last {research_pool.FRESH_WEEKS} weeks "
+            f"({len(hist['weeks'])} earlier week(s) read)")
         ok, msg = _run_phase(
             "phase 4/4 · report", "research-p4", workdir, None, week,
             {"step1_file": step1, "step2_file": step2, "step3_file": step3,
-             "mem": mem, "calendar": calendar_block}, timeout=3600)
+             "mem": mem, "calendar": calendar_block,
+             "taste_brief": _taste_brief_block(),
+             "exclude_block": research_pool.exclude_block(hist),
+             "accounts_block": research_pool.accounts_block(hist, week),
+             "publish_instruction": (PUBLISH_DRY if no_push
+                                     else PUBLISH_LIVE.format(week=week))},
+            timeout=3600)
         if not ok:
             return False, msg
+        # v2.1: enforce. The agent was told; the code checks.
+        changed, lines = _enforce_pool(mem, week, hist)
+        for ln in lines:
+            log("  hygiene: " + ln)
+        if no_push:
+            log(f"  NO-PUSH: clone kept at {mem} — inspect candidates/"
+                f"candidates-{week}.json and reports/ there; nothing was "
+                f"committed or pushed.")
+            return True, (f"dry run complete for {week}; "
+                          + (f"enforcement corrected the pool: {lines[0]}"
+                             if changed else f"pool clean as written: {lines[0]}")
+                          + f" — files at {mem}")
+        if changed:
+            ok2, pmsg = pipeline_state.push_with_retry(
+                mem, f"Research hygiene {week}: enforce v2.1 pool rules",
+                logger=log)
+            log(f"  hygiene push: {pmsg}" if ok2
+                else f"  WARNING: hygiene push failed ({pmsg}) — the repo "
+                     f"still holds the un-enforced pool")
     finally:
-        shutil.rmtree(memroot, ignore_errors=True)
+        if not no_push:
+            shutil.rmtree(memroot, ignore_errors=True)
 
     if candidates_exist(week, token):
         log("  candidates file confirmed in repo — screener + invite follow.")
@@ -224,9 +325,13 @@ def main():
                          f"(default {DEFAULT_SPACING}; lower risks stale data)")
     ap.add_argument("--from-phase", type=int, default=1, choices=[1, 2, 3, 4],
                     help="resume from a phase, reusing existing phase files")
+    ap.add_argument("--no-push", action="store_true",
+                    help="dry run: phase 4 writes into the clone, nothing is "
+                         "committed or pushed, the clone is kept (v2.1)")
     args = ap.parse_args()
 
-    ok, msg = run_research(args.week, args.spacing, args.from_phase)
+    ok, msg = run_research(args.week, args.spacing, args.from_phase,
+                           args.no_push)
     print(("SUCCESS: " if ok else "FAILED: ") + msg)
     sys.exit(0 if ok else 1)
 

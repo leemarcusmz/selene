@@ -1,5 +1,5 @@
 # =============================================================================
-# Selene Dreams — Visual Screening Runner v1.4 (2026-09-28)
+# Selene Dreams — Visual Screening Runner v1.5 (2026-09-30)
 # screen_runner.py — Give the weekly research agent eyes + a taste that learns
 # =============================================================================
 #
@@ -25,6 +25,25 @@
 #   python3 screen_runner.py --week 2026-08-17
 # =============================================================================
 # CHANGELOG
+#   1.5  2026-09-30  RESEARCH LANE v2.1 — never re-offer, rotate accounts.
+#                    (a) TOP-UP OFF. Every top-up source is an earlier
+#                        shortlist entry, i.e. already offered to the team;
+#                        on 2026-09-28 four of the five repeats came from
+#                        here (DbV-HJdGw7U for the 4th time). Under the new
+#                        absolute never-re-offer rule the mechanism has no
+#                        legal input, so TOPUP_ENABLED = False and a thin
+#                        week publishes short, with the count in the log.
+#                        The code stays for the record.
+#                    (b) research_pool.select_shortlist(): cap 2 per account
+#                        and reserve FRESH_SLOTS (3) of the shortlist for
+#                        accounts not offered in the last 4 weeks, best-first;
+#                        the rest fills by score up to SHORTLIST_SIZE_MAX.
+#                        `freshAccount` comes from the candidates file (phase
+#                        4 / the runner's enforcement) or is recomputed from
+#                        the clone when absent.
+#                    (c) Belt and braces: candidates already offered or picked
+#                        are dropped before scoring, in case an un-enforced
+#                        pool ever reaches the screener.
 #   1.4  2026-09-28  {performance_section}: taste_brief.performance_block(
 #                    "screening") — what the image lane's published posts
 #                    did, so the screener learns from results, not only picks.
@@ -78,6 +97,7 @@ import csv
 
 import memory_digests
 import pipeline_state
+import research_pool
 from caption_runner import clone_memory, invoke_claude_json, load_prompt, log
 
 SCREEN_SCHEMA = {
@@ -98,6 +118,8 @@ SHORTLIST_SIZE_MIN = 8
 # brand; padding to 8 would have meant shipping a resort scene and a UGC
 # snapshot. Carried entries keep their own week so their archived images
 # still resolve — see the origN/archiveWeek note in picker.gs.
+TOPUP_ENABLED = False        # v1.5: off — see changelog (a). Flip only if the
+                             # never-re-offer rule is ever relaxed.
 TOPUP_MIN_SCORE = 8          # strictly better than MIN_SCORE — proven leftovers
 TOPUP_MAX_AGE_WEEKS = 6      # older than this and the aesthetic has moved on
 SHORTLIST_SIZE_MAX = 12
@@ -349,6 +371,7 @@ def _run_screen(week):
     if not entries:
         return False, "candidates file has no entries"
     log(f"  {len(entries)} candidate(s).")
+    hist = None
 
     workdir = tempfile.mkdtemp(prefix=f"selene_screen_{week}_")
     try:
@@ -360,6 +383,17 @@ def _run_screen(week):
         out_shortlist = os.path.join(mem, "shortlists", f"shortlist-{week}.json")
         if os.path.exists(out_shortlist):
             return True, f"shortlist-{week}.json already exists — nothing to do"
+
+        # v1.5 (c): never score something already offered or picked.
+        hist = research_pool.history(mem, week)
+        before = len(entries)
+        entries, hy = research_pool.enforce(entries, hist, renumber=False)
+        if len(entries) != before:
+            log(f"  hygiene dropped {before - len(entries)} candidate(s) "
+                f"before scoring: " + " | ".join(research_pool.report_lines(hy)[1:]))
+        if not entries:
+            return False, "every candidate was already offered or picked — nothing to screen"
+        log(f"  {len(entries)} to score · {hy['fresh_accounts']} from fresh accounts")
 
         img_dir = os.path.join(workdir, "candidates")
         os.makedirs(img_dir)
@@ -416,11 +450,19 @@ def _run_screen(week):
             return False, result
         by_n = {s["n"]: s for s in result.get("scores", [])}
 
-        kept = sorted(
+        passed = sorted(
             [e for e in entries if by_n.get(e.get("n"), {}).get("keep")],
-            key=lambda e: -by_n[e["n"]]["score"])[:SHORTLIST_SIZE_MAX]
-        if not kept:
+            key=lambda e: -by_n[e["n"]]["score"])
+        if not passed:
             return False, "screening kept zero candidates — check scores.json logic"
+        # v1.5 (b): 2 per account, 3 slots reserved for fresh accounts.
+        for e in passed:
+            e["_score"] = by_n[e["n"]]["score"]
+        kept, sel_note = research_pool.select_shortlist(
+            passed, hist, SHORTLIST_SIZE_MIN, SHORTLIST_SIZE_MAX)
+        for e in passed:
+            e.pop("_score", None)
+        log(f"  selection: {sel_note}")
 
         # Renumber shortlist 1..N, carry score + rationale.
         # origN is REQUIRED (added 2026-08-17): the archived images in
@@ -439,7 +481,11 @@ def _run_screen(week):
             ne["brandRationale"] = s.get("rationale", "")
             shortlist["entries"].append(ne)
 
-        if len(shortlist["entries"]) < SHORTLIST_SIZE_MIN:
+        if len(shortlist["entries"]) < SHORTLIST_SIZE_MIN and not TOPUP_ENABLED:
+            log(f"  only {len(shortlist['entries'])} on-brand candidate(s) "
+                f"this week — publishing short (top-up is off since v1.5: "
+                f"carried references are already-offered by definition)")
+        elif len(shortlist["entries"]) < SHORTLIST_SIZE_MIN:
             added = _top_up(shortlist, mem, week)
             if added:
                 log(f"  topped up with {added} carried reference(s) from "

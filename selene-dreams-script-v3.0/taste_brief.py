@@ -1,7 +1,7 @@
 """
 taste_brief.py — distill the taste layer into ONE brief every writer reads
 =============================================================================
-VERSION 1.4 — 2026-09-28
+VERSION 1.5 — 2026-09-30
 
 WHAT
     taste/references.md, feedback.md and outcomes.md (taste_store) are raw.
@@ -48,6 +48,11 @@ THE RULE
     The brief changes HOW things are written. It never decides WHETHER.
 
 CHANGELOG
+    1.5  2026-09-30  "research" STAGE. The weekly research phase 4 now
+                     receives the brief too (research lane v2.1); it sees
+                     the same lanes as screening (all/images/visual) since
+                     it chooses references for the image lane. No other
+                     change.
     1.4  2026-09-28  LANES FOR PERFORMANCE PRINCIPLES + A PERFORMANCE BLOCK
                      FOR WRITERS. (a) The first performance principle (direct-
                      address captions) reached writer_edu — slide copy is not a
@@ -98,7 +103,7 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.4"
+VERSION = "1.5"
 CACHE_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.md")
 STAMP_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.stamp")
 DISTILL_EVERY_DAYS = getattr(config, "TASTE_DISTILL_EVERY_DAYS", 6)
@@ -121,6 +126,7 @@ SCHEMA = {
 STAGE_LANES = {
     "image-prompts": {"all", "images", "visual"},
     "screening":     {"all", "images", "visual"},
+    "research":      {"all", "images", "visual"},
     "caption":       {"all", "images", "copy"},
     "reel-hook":     {"all", "reels", "copy"},
     "reel-caption":  {"all", "reels", "copy"},
