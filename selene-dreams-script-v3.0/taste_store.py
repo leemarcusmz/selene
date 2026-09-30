@@ -1,7 +1,7 @@
 """
 taste_store.py — ONE taste layer for all three lanes
 =============================================================================
-VERSION 1.5 — 2026-09-28
+VERSION 1.6 — 2026-09-30
 
 THE DECISION (Marcus, 2026-09-16)
     Keep the image, educational and reel flows SEPARATE — the flows differ —
@@ -39,6 +39,13 @@ RATE LIMIT
     `python3 taste_store.py --sync` forces one.
 
 CHANGELOG
+    1.6  2026-09-30  THE HOURLY DISTILL THAT NEVER SHOULD HAVE BEEN. 1.5 hashed
+                     feedback.md whole — including its own "Generated <time>"
+                     header line, which changes every sync. So every hourly
+                     sync saw "feedback changed" and called taste_brief.distill():
+                     19 Claude calls on 30 Sep alone, brief v1..v19 all saying
+                     "no new evidence". The hash now skips the Generated line.
+                     (taste_brief 1.6 fixes the same flaw in its own fingerprint.)
     1.5  2026-09-28  FEEDBACK TRIGGERS A DISTILL. sync() now (a) writes the
                      outcomes list to _state/taste-outcomes.json so writers
                      can rank posts without a clone (taste_brief.performance_
@@ -86,7 +93,7 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.5"
+VERSION = "1.6"
 TASTE_DIR = "taste"
 SYNC_EVERY_HOURS = getattr(config, "TASTE_SYNC_EVERY_HOURS", 1)
 FEEDBACK_STAMP = os.path.join(reel_config.BASE_DIR, "_state", "taste-feedback.hash")
@@ -475,7 +482,9 @@ def _feedback_changed(mem_dir):
     import hashlib
     try:
         with open(os.path.join(mem_dir, TASTE_DIR, "feedback.md")) as f:
-            h = hashlib.sha1(f.read().encode()).hexdigest()[:12]
+            body = "\n".join(l for l in f.read().splitlines()
+                             if not l.startswith("Generated "))   # 1.6: the stamp is not a change
+            h = hashlib.sha1(body.encode()).hexdigest()[:12]
         old = ""
         try:
             with open(FEEDBACK_STAMP) as f:

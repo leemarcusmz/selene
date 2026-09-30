@@ -1,5 +1,5 @@
-<!-- VERSION: 2026-09-30.v7 -->
-<!-- research lane v2.1: taste brief in Step A, HARD EXCLUDE + account rotation in Step C(e), account field + fresh-account floor in the JSON, {publish_instruction} for dry runs. v6 2026-09-16: + @hommey in the tracked brand feeds -->
+<!-- VERSION: 2026-09-30.v8 -->
+<!-- v8: own-brand section reads taste/outcomes.md + outcomes.json (first-party reach/shares/saves, every lane) instead of the non-existent post-outcomes.csv — every weekly report had called own-brand engagement "invisible" because the file it was told to read does not exist. v7: research lane v2.1: taste brief in Step A, HARD EXCLUDE + account rotation in Step C(e), account field + fresh-account floor in the JSON, {publish_instruction} for dry runs. v6 2026-09-16: + @hommey in the tracked brand feeds -->
 # PHASE 4 of 4 — analyse, self-criticise, publish
 
 All the week's raw data is already collected. No further API calls of any kind.
@@ -7,7 +7,7 @@ All the week's raw data is already collected. No further API calls of any kind.
 INPUTS: `{step1_file}` (posts, stats, hashtags) · `{step2_file}` (captions, comments) · `{step3_file}` (image URLs). The memory repo is cloned at `{mem}`.
 
 ## Step A — read memory
-`{mem}/brand-guide.md` FIRST — its photography rules and 12-point rubric govern every candidate decision; if it conflicts with anything else, it wins. Then `trends.md`, the 2-3 most recent `reports/`, `copy-playbook.md`, `keyword-bank.md`, `hooks-library.md`, `metrics.csv`, `selections.md`, `objections.md`, and — for the own-brand section — `post-outcomes.csv`, `generation-scores.csv` and `prompt-playbook.md`.
+`{mem}/brand-guide.md` FIRST — its photography rules and 12-point rubric govern every candidate decision; if it conflicts with anything else, it wins. Then `trends.md`, the 2-3 most recent `reports/`, `copy-playbook.md`, `keyword-bank.md`, `hooks-library.md`, `metrics.csv`, `selections.md`, `objections.md`, and — for the own-brand section — `taste/outcomes.md` (+ `taste/outcomes.json`: first-party 7-day reach, views, likes, shares, saves for EVERY Selene post, all lanes — this is the performance source; `post-outcomes.csv` no longer exists), `generation-scores.csv` and `prompt-playbook.md`.
 
 ### WHAT MARCUS WANTS — the taste brief (distilled from his feedback, his own reference images and measured post performance; the same brief every writer in the pipeline reads)
 {taste_brief}
@@ -19,7 +19,7 @@ Use it as the tiebreaker above engagement when two candidates fit the brand-guid
 - **Metrics**: rank by engagement rate (interactions ÷ followers; show raw + rate), the two tiers in separate lists. Cadence and best times in HKT. Format mix. Caption features. Velocity flags — but never for the three brands added 2026-08-12.
 - **Hook taxonomy**: classify every top post (tracked brands AND hashtag posts) as QUESTION / BENEFIT-CLAIM / SCARCITY-RESTOCK / MOMENT-JACK / EDUCATION / HUMOR / SOCIAL-PROOF / TRANSFORMATION. Which types are rising or fading versus recent weeks.
 - **Hashtag frontier**: accounts and aesthetics recurring across tags that the 6 tracked brands have not adopted.
-- **Own brand**: engagement rate vs market, follower growth vs metrics.csv, and attribution — match scraped own captions to copy-playbook.md. THEN, using post-outcomes.csv + generation-scores.csv: do higher rubric scores correspond to better performance, or not? Say so plainly either way — a rubric that does not predict performance is worth knowing. Name rows whose post URL is missing from the sheet. **If fewer than 6 posts have both a QA score and metrics, state that the sample is too small and stop there — do not manufacture a correlation from four points.**
+- **Own brand**: engagement rate vs market, follower growth vs metrics.csv, and attribution — match scraped own captions to copy-playbook.md. THEN, joining taste/outcomes.json (reach + shares + saves is the goal metric) to generation-scores.csv by post: do higher rubric scores correspond to better performance, or not? Say so plainly either way — a rubric that does not predict performance is worth knowing. Name rows whose post URL is missing from the sheet. **If fewer than 6 posts have both a QA score and metrics, state that the sample is too small and stop there — do not manufacture a correlation from four points.**
 - **Keywords**: recurring commercial terms in top captions not already in keyword-bank.md.
 
 ## Step C — candidate pool (18-25)

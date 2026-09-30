@@ -1,7 +1,7 @@
 """
 taste_brief.py — distill the taste layer into ONE brief every writer reads
 =============================================================================
-VERSION 1.5 — 2026-09-30
+VERSION 1.6 — 2026-09-30
 
 WHAT
     taste/references.md, feedback.md and outcomes.md (taste_store) are raw.
@@ -48,6 +48,11 @@ THE RULE
     The brief changes HOW things are written. It never decides WHETHER.
 
 CHANGELOG
+    1.6  2026-09-30  FINGERPRINT IGNORES THE "Generated" STAMP. _fingerprint
+                     hashed feedback/references/outcomes.md whole, so the
+                     taste_store timestamp made every distill look like new
+                     input and the "no new input — skipped" path never fired.
+                     Companion to taste_store 1.6.
     1.5  2026-09-30  "research" STAGE. The weekly research phase 4 now
                      receives the brief too (research lane v2.1); it sees
                      the same lanes as screening (all/images/visual) since
@@ -103,7 +108,7 @@ from datetime import datetime
 import config
 import reel_config
 
-VERSION = "1.5"
+VERSION = "1.6"
 CACHE_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.md")
 STAMP_PATH = os.path.join(reel_config.BASE_DIR, "_state", "taste-brief.stamp")
 DISTILL_EVERY_DAYS = getattr(config, "TASTE_DISTILL_EVERY_DAYS", 6)
@@ -392,7 +397,9 @@ def _fingerprint(mem_dir):
     import hashlib
     h = hashlib.sha1()
     for name in ("feedback.md", "references.md", "outcomes.md"):
-        h.update(_read(os.path.join(mem_dir, "taste", name)).encode())
+        body = "\n".join(l for l in _read(os.path.join(mem_dir, "taste", name)).splitlines()
+                         if not l.startswith("Generated "))       # 1.6: stamp is not input
+        h.update(body.encode())
     return h.hexdigest()[:12]
 
 
