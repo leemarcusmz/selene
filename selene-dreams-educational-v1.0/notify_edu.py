@@ -1,7 +1,10 @@
 # =============================================================================
 # notify_edu.py — the FINAL LOOK gate: email Marcus the strip, he flips one cell
-# VERSION 1.3 — 2026-09-14
+# VERSION 1.4 — 2026-09-30
 # CHANGELOG
+#   1.4  2026-09-30  send_mail goes through v3.0 mailer.py (Gmail API, SMTP
+#                    fallback, recipient stays C.MAIL_TO). smtplib never left
+#                    the droplet — outbound SMTP is blocked there (p8f).
 #   1.3  2026-09-14  PER-POST MAIL OFF by default (C.EDU_NOTIFY_PER_POST).
 #                    review.gs v2.1 draws educational carousels in the same
 #                    approval queue as the AI ones, so this lane no longer
@@ -34,7 +37,7 @@
 #                    strip is still saved and K still becomes Review - the
 #                    pipeline never stalls on a missing password.
 # =============================================================================
-import os, re, io, ssl, smtplib, tempfile, shutil
+import os, re, io, tempfile, shutil
 from email.message import EmailMessage
 from PIL import Image, ImageDraw, ImageFont
 import config_edu as C
@@ -98,21 +101,12 @@ def send_mail(subject, body, attachment_path, extra_paths=()):
     # Drive by the caller, so skipping the send loses nothing.
     if not getattr(C, "EDU_NOTIFY_PER_POST", True):
         return False, "per-post mail off (EDU_NOTIFY_PER_POST) - review page is the gate"
-    env = C.load_env()
-    sender = env.get("SELENE_MAIL_FROM", "").strip()
-    pw = env.get("SELENE_MAIL_APP_PASSWORD", "").replace(" ", "").strip()
-    if not sender or not pw:
-        return False, "mail not configured (SELENE_MAIL_FROM / SELENE_MAIL_APP_PASSWORD missing in .env)"
-    msg = EmailMessage()
-    msg["Subject"] = subject; msg["From"] = sender; msg["To"] = C.MAIL_TO
-    msg.set_content(body)
+    import mailer          # v3.0 (V3_DIR is on sys.path via config_edu)
+    attachments = []
     for p in [attachment_path] + [x for x in extra_paths if x]:
         with open(p, "rb") as f:
-            msg.add_attachment(f.read(), maintype="image", subtype="jpeg",
-                               filename=os.path.basename(p))
-    with smtplib.SMTP_SSL(C.SMTP_HOST, C.SMTP_PORT, context=ssl.create_default_context()) as s:
-        s.login(sender, pw); s.send_message(msg)
-    return True, "sent"
+            attachments.append((os.path.basename(p), f.read(), "image/jpeg"))
+    return mailer.send(subject, body, to=C.MAIL_TO, attachments=attachments)
 
 
 def notify_row(q, st, topic):

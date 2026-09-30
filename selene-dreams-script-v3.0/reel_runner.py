@@ -1,7 +1,7 @@
 """
 reel_runner.py — the trial-reel lane, end to end
 =============================================================================
-VERSION 1.19 — 2026-09-28
+VERSION 1.20 — 2026-09-30
 
 WHAT IT DOES
     Marcus puts a video in Drive "05. Video Reel / 01. Video Content" (from his
@@ -51,6 +51,11 @@ CLI
     python3 reel_runner.py --post-metrics    # read carousel results back now
 
 CHANGELOG
+    1.20 2026-09-30  ALERT MAIL VIA mailer.py (Gmail API, SMTP fallback).
+                     The droplet cannot reach any SMTP port, so every
+                     failure-streak alert since the 24 Sep cutover was
+                     lost silently. _mail_alert now delegates to mailer.send
+                     and logs the real reason when mail fails (p8f).
     1.19 2026-09-28  FAILURES ARE VISIBLE AND FINITE. On 2026-09-28 a dry
                      run failed twice on caption validation and the only
                      trace was a log line; a video like that would be retried
@@ -225,7 +230,7 @@ from zoneinfo import ZoneInfo
 
 import reel_config
 
-VERSION = "1.19"
+VERSION = "1.20"
 MAX_FAILS_PER_VIDEO = getattr(reel_config, "MAX_FAILS_PER_VIDEO", 3)
 LANE_FAIL_ALERT_TICKS = getattr(reel_config, "LANE_FAIL_ALERT_TICKS", 4)
 
@@ -882,33 +887,19 @@ def _record_failure(state, h, name, err, dry_run):
 
 
 def _mail_alert(streak, name, err):
-    """One email per failure streak. Uses the SMTP app password from .env
-    (SELENE_MAIL_FROM / SELENE_MAIL_APP_PASSWORD). False if unconfigured."""
+    """One email per failure streak, through mailer.py (Gmail API first,
+    SMTP app-password fallback). False if it could not be sent."""
     try:
-        import smtplib
-        from email.message import EmailMessage
-        import config
-        env = config._ENV
-        sender = (env.get("SELENE_MAIL_FROM") or "").strip()
-        pw = (env.get("SELENE_MAIL_APP_PASSWORD") or "").replace(" ", "").strip()
-        to = (env.get("SELENE_ALERT_TO") or "lee.marcusmz@gmail.com").strip()
-        if not sender or not pw:
-            log("  (mail not configured — SELENE_MAIL_FROM/APP_PASSWORD missing; no email)")
-            return False
-        msg = EmailMessage()
-        msg["Subject"] = f"[SELENE DREAMS] Reel lane: {streak} ticks failed in a row"
-        msg["From"], msg["To"] = sender, to
-        msg.set_content(
+        import mailer
+        ok, msg = mailer.send(
+            f"[SELENE DREAMS] Reel lane: {streak} ticks failed in a row",
             f"The trial-reel lane has failed {streak} consecutive ticks and is not "
             f"publishing.\n\nLast video: {name}\nLast error: {err}\n\n"
             f"Check on the VPS: tail -30 ~/runner/selene/selene-dreams-script-v3.0/"
             f"_logs/reels-$(date +%F).log\nParked videos show 'parked' in the Videos "
             f"tab col M of the Trial Reel sheet.\n\nreel_runner {VERSION}")
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as s:
-            s.login(sender, pw)
-            s.send_message(msg)
-        log(f"  alert emailed to {to}")
-        return True
+        log(f"  alert mail: {msg}")
+        return ok
     except Exception as e:
         log(f"  alert email failed ({type(e).__name__}: {str(e)[:80]})")
         return False

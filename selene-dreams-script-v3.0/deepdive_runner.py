@@ -1,5 +1,5 @@
 # =============================================================================
-# Selene Dreams — Monthly IG Deep-Dive Runner v1.0 (2026-09-30)
+# Selene Dreams — Monthly IG Deep-Dive Runner v1.1 (2026-09-30)
 # deepdive_runner.py — the 1st-of-the-month strategic pass, ON THE DROPLET
 # =============================================================================
 #
@@ -26,6 +26,8 @@
 #   python3 deepdive_runner.py --force          # ignore the LIVE gate
 # =============================================================================
 # CHANGELOG
+#   1.1  2026-09-30  Mail through mailer.py (Gmail API). The 1.0 SMTP path could
+#                    never leave the droplet (p8f).
 #   1.0  2026-09-30  First build (replaces the cloud task; Runner Hub p8e).
 # =============================================================================
 
@@ -40,7 +42,7 @@ import config
 import pipeline_state
 from caption_runner import clone_memory, invoke_claude, load_prompt, log
 
-VERSION = "1.0"
+VERSION = "1.1"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(BASE_DIR)
 DEEPDIVE = "deepdive"
@@ -53,34 +55,19 @@ def previous_month(today=None):
 
 
 def _mail_report(path, month):
-    """E-mail the deep-dive to Marcus. Same SMTP setup reel_runner uses
-    (SELENE_MAIL_FROM / SELENE_MAIL_APP_PASSWORD / SELENE_ALERT_TO in .env).
-    Returns (ok, msg); never raises."""
+    """E-mail the deep-dive to Marcus through mailer.py (Gmail API, SMTP
+    fallback; recipient SELENE_ALERT_TO). Returns (ok, msg); never raises."""
     try:
-        import smtplib
-        from email.message import EmailMessage
-        env = config._ENV
-        sender = (env.get("SELENE_MAIL_FROM") or "").strip()
-        pw = (env.get("SELENE_MAIL_APP_PASSWORD") or "").replace(" ", "").strip()
-        to = (env.get("SELENE_ALERT_TO") or "lee.marcusmz@gmail.com").strip()
-        if not sender or not pw:
-            return False, "mail not configured (SELENE_MAIL_FROM/APP_PASSWORD)"
+        import mailer
         with open(path, encoding="utf-8") as f:
             body = f.read()
-        msg = EmailMessage()
-        msg["Subject"] = f"[SELENE DREAMS] Monthly IG deep-dive {month}"
-        msg["From"], msg["To"] = sender, to
-        msg.set_content(
+        return mailer.send(
+            f"[SELENE DREAMS] Monthly IG deep-dive {month}",
             f"The {month} deep-dive is in selene-ig-memory at reports/"
             f"{os.path.basename(path)} (also attached).\n\n"
             + body[:6000] + ("\n\n[... full report attached]" if len(body) > 6000 else "")
-            + f"\n\n— deepdive_runner {VERSION} on the VPS")
-        msg.add_attachment(body.encode("utf-8"), maintype="text", subtype="markdown",
-                           filename=os.path.basename(path))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
-            s.login(sender, pw)
-            s.send_message(msg)
-        return True, f"e-mailed to {to}"
+            + f"\n\n— deepdive_runner {VERSION} on the VPS",
+            attachments=[(os.path.basename(path), body, "text/markdown")])
     except Exception as e:
         return False, f"e-mail failed ({type(e).__name__}: {str(e)[:100]})"
 
