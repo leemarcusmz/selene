@@ -1,4 +1,5 @@
-<!-- VERSION: 2026-09-16.v2 — + @hommey -->
+<!-- VERSION: 2026-09-16.v2 -->
+<!-- + @hommey -->
 # Social calendar review — evidence, gaps, and things to cut
 
 You are auditing Selene Dreams' promotional calendar. Selene is a luxury natural-fibre bedding brand (selenedreams.com). The calendar was assembled largely by hand and, in Marcus's own words, is "still all just guessing". Your job is to replace guesses with evidence, and to be explicit about which parts you cannot yet answer.

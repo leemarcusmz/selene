@@ -1,4 +1,5 @@
-<!-- VERSION: 2026-08-17.v2 — recency gate on TOP POSTS + stale-post listing in DATA NOTES -->
+<!-- VERSION: 2026-08-17.v2 -->
+<!-- recency gate on TOP POSTS + stale-post listing in DATA NOTES -->
 # PHASE 1 of 4 — pull the week's data
 
 Three calls, back-to-back. These are DIFFERENT API paths, so no spacing is needed between them.

@@ -1,4 +1,5 @@
-<!-- VERSION: 2026-08-19.v3 — comment mining RE-ENABLED (run-scoped token; schema verified live 2026-08-19) -->
+<!-- VERSION: 2026-08-19.v3 -->
+<!-- comment mining RE-ENABLED (run-scoped token; schema verified live 2026-08-19) -->
 # PHASE 2 of 4 — captions and buyer objections
 
 Phase 1's raw data is at `{step1_file}` — read it first, especially the TOP POSTS FOR PHASE 2 section.
