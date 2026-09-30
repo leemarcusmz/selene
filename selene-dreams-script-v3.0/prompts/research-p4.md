@@ -1,4 +1,5 @@
-<!-- VERSION: 2026-09-30.v7 — research lane v2.1: taste brief in Step A, HARD EXCLUDE + account rotation in Step C(e), account field + fresh-account floor in the JSON, {publish_instruction} for dry runs. v6 2026-09-16: + @hommey in the tracked brand feeds -->
+<!-- VERSION: 2026-09-30.v7 -->
+<!-- research lane v2.1: taste brief in Step A, HARD EXCLUDE + account rotation in Step C(e), account field + fresh-account floor in the JSON, {publish_instruction} for dry runs. v6 2026-09-16: + @hommey in the tracked brand feeds -->
 # PHASE 4 of 4 — analyse, self-criticise, publish
 
 All the week's raw data is already collected. No further API calls of any kind.
