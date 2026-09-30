@@ -1,7 +1,25 @@
 # =============================================================================
 # edu_server.py — Educational Carousel flow server (port 5002, poll-based)
-# VERSION 2.5 — 2026-09-14
+# VERSION 2.6 — 2026-09-30
 # CHANGELOG
+#   2.6  2026-09-30  A FAILED TICK SAYS SO (Runner Hub p8d). /tick answered
+#                    {"ok": true} whatever happened inside: a stage that raised
+#                    became a "stage": "ERROR: ..." string and the response
+#                    stayed 200, so poke.sh pinged healthchecks green and 14
+#                    missing Drive folders went unreported for weeks. Now:
+#                    - every stage error lands in results["errors"] (a list of
+#                      stage names) and the body says "ok": false;
+#                    - library folders missing on Drive (LibraryFoldersMissing,
+#                      library_edu 2.3) are a CONFIGURATION fault -> HTTP 500
+#                      on the first tick, every tick, until the Sources tab or
+#                      LIBRARY_ROOTS is fixed;
+#                    - any other stage error is HTTP 500 once it has failed on
+#                      TICK_ERROR_ALERT_AFTER (2) consecutive ticks - a single
+#                      Sheets 429 or Google 500 still logs and shows ok:false,
+#                      but does not page anyone. The count lives in
+#                      _state/edu-tick-errors.json and resets on success.
+#                    poke.sh v1.2 turns a non-2xx into a /fail ping, so this is
+#                    what makes the edu heartbeat mean something.
 #   2.5  2026-09-14  SECURITY: /tick and /publish now require the shared
 #                    secret, as a JSON body {"secret": ...} or an
 #                    X-Selene-Secret header. They were open — the server is
@@ -43,15 +61,20 @@
 #                    still no tunnel and no Apps Script.
 #   1.0  2026-08-28  First release: plan -> arm -> render.
 # =============================================================================
-import threading, traceback
+import json, os, threading, traceback
 from flask import Flask, jsonify, request
 import config_edu as C
 import sheets_edu as S
 from log_edu import log
 
-VERSION = "2.5"
+VERSION = "2.6"
 app = Flask(__name__)
 _busy = threading.Event()
+
+
+TICK_ERROR_ALERT_AFTER = 2          # consecutive failing ticks before HTTP 500
+_ERRORS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "_state", "edu-tick-errors.json")
 
 
 def _stage(results, name, fn):
@@ -59,7 +82,51 @@ def _stage(results, name, fn):
         results[name] = fn()
     except Exception as e:
         results[name] = f"ERROR: {e}"
+        results.setdefault("errors", []).append(name)
+        # A missing Drive folder is configuration, not weather: it will not
+        # heal on the next tick, so it alerts on this one.
+        if e.__class__.__name__ == "LibraryFoldersMissing":
+            results.setdefault("config_errors", []).append(name)
         log(f"{name} ERROR: {traceback.format_exc()}")
+
+
+def _consecutive_failures(errors):
+    """Update the per-stage consecutive-failure counts on disk; return the
+    highest count among the stages that failed THIS tick. Never raises."""
+    try:
+        try:
+            with open(_ERRORS_PATH) as f:
+                counts = json.load(f)
+        except Exception:
+            counts = {}
+        counts = {k: v + 1 for k, v in counts.items() if k in errors}
+        for name in errors:
+            counts.setdefault(name, 1)
+        os.makedirs(os.path.dirname(_ERRORS_PATH), exist_ok=True)
+        with open(_ERRORS_PATH, "w") as f:
+            json.dump(counts, f)
+        return max(counts.values()) if counts else 0
+    except Exception as e:
+        log(f"tick error-count bookkeeping failed: {e}")
+        return TICK_ERROR_ALERT_AFTER
+
+
+def _tick_response(results):
+    """ok:true only when every stage ran clean. HTTP 500 when the failure is
+    configuration (missing Drive folders) or has persisted across ticks."""
+    errors = results.get("errors") or []
+    if not errors:
+        _consecutive_failures([])            # reset the counts
+        return jsonify({"ok": True, **results})
+    streak = _consecutive_failures(errors)
+    results["consecutive"] = streak
+    alert = bool(results.get("config_errors")) or streak >= TICK_ERROR_ALERT_AFTER
+    body = {"ok": False, **results}
+    if alert:
+        log(f"tick FAILED ({', '.join(errors)}; streak {streak}) -> 500")
+        return jsonify(body), 500
+    log(f"tick degraded ({', '.join(errors)}; streak {streak}) -> 200 ok:false")
+    return jsonify(body)
 
 
 def _check_secret():
@@ -117,7 +184,7 @@ def tick():
         _stage(results, "notify", notify_edu.run_pending)
         _stage(results, "publish", publish_edu.run)
         log(f"tick: {results}")
-        return jsonify({"ok": True, **results})
+        return _tick_response(results)
     finally:
         _busy.clear()
 

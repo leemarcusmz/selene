@@ -1,6 +1,24 @@
 /**
- * Selene Dreams — Google Apps Script Trigger v3.3
- * File: trigger.gs
+ * Selene Dreams — Google Apps Script Trigger v3.4
+ * File: trigger.gs   (project file name in the editor: Code.gs)
+ *
+ * v3.4 (2026-09-30): RETRY WITH BACKOFF ON THE TUNNEL (Runner Hub p8c).
+ *   Every relay to the runner rides the ngrok tunnel. While the tunnel is
+ *   mid-restart (deploy.sh restarts the servers; ngrok reconnects) one POST
+ *   meets a 404/502 from ngrok's edge or no response at all, and under
+ *   muteHttpExceptions that was the end of it: the row flipped to ERROR and
+ *   that unit of work waited for a human to set it back to Ready. New
+ *   sdTunnelFetch_() (namespaced SD_ / sd…_) retries the TRANSIENT shapes
+ *   only — exception, 404 from the ngrok edge, 408/425/429, 5xx — three
+ *   attempts with 2 s then 6 s waits (about 8 s worst case, inside the
+ *   on-edit budget). 200 returns at once; 401/403 (wrong secret) and other
+ *   4xx never retry because retrying cannot help. sendWebhook() and
+ *   sendCaptionWebhook() use it; picker.gs v4.2 uses it for the /select,
+ *   /research and /screen relays. Result strings gain the attempt count
+ *   ("error_502 after 3 tries") so the System Remark says what happened.
+ *   PASTE NOTE: line 47 in the EDITOR holds the live WEBHOOK_SECRET (rotated
+ *   24 Sep, editor only); this repo copy carries the dead v3.3 value on
+ *   purpose. Paste this file, then restore the editor's secret line.
  *
  * v3.3 (2026-09-14): WEBHOOK_SECRET rotated. The previous value was a
  *   guessable string that sat in ten files (three of them world-readable)
@@ -446,6 +464,54 @@ function handleProductTypeEdit(spreadsheet, sheet, row, productType) {
   );
 }
 
+// ── Tunnel bridge: retry with backoff (v3.4, 2026-09-30, Runner Hub p8c) ──
+// Namespaced SD_ / sd…_ : all .gs files share one global scope (see
+// feedback_gs_globals). Shared by trigger.gs and picker.gs.
+const SD_BRIDGE_ATTEMPTS    = 3;              // 1 try + 2 retries
+const SD_BRIDGE_BACKOFF_MS  = [2000, 6000];   // wait before retry 1, retry 2
+// 404 is here because ngrok's edge answers 404 (ERR_NGROK_3200) while the
+// tunnel is offline; the runner itself never 404s these routes.
+const SD_BRIDGE_RETRY_CODES = [404, 408, 425, 429, 500, 502, 503, 504];
+
+/**
+ * UrlFetchApp.fetch with retry on transient failures.
+ * Returns { ok, code, text, attempts, threw } — never throws.
+ *   ok      true only for HTTP 200
+ *   code    last HTTP code (0 when the last attempt threw)
+ *   threw   true when the last attempt got no response at all
+ */
+function sdTunnelFetch_(label, url, options) {
+  var last = null;
+  for (var attempt = 1; attempt <= SD_BRIDGE_ATTEMPTS; attempt++) {
+    try {
+      var resp = UrlFetchApp.fetch(url, options);
+      var code = resp.getResponseCode();
+      if (SD_BRIDGE_RETRY_CODES.indexOf(code) === -1) {
+        return { ok: code === 200, code: code, text: resp.getContentText(),
+                 attempts: attempt, threw: false };
+      }
+      last = { ok: false, code: code, text: resp.getContentText(),
+               attempts: attempt, threw: false };
+      Logger.log(label + ': HTTP ' + code + ' on attempt ' + attempt + '/' +
+                 SD_BRIDGE_ATTEMPTS);
+    } catch (e) {
+      last = { ok: false, code: 0, text: String(e), attempts: attempt, threw: true };
+      Logger.log(label + ': no response on attempt ' + attempt + '/' +
+                 SD_BRIDGE_ATTEMPTS + ': ' + e);
+    }
+    if (attempt < SD_BRIDGE_ATTEMPTS) {
+      Utilities.sleep(SD_BRIDGE_BACKOFF_MS[attempt - 1] || 5000);
+    }
+  }
+  return last;
+}
+
+/** 'error_502 after 3 tries' / 'exception after 3 tries' — for remarks. */
+function sdBridgeOutcome_(r) {
+  return (r.threw ? 'exception' : 'error_' + r.code) +
+         (r.attempts > 1 ? ' after ' + r.attempts + ' tries' : '');
+}
+
 /** POST /caption for a queue # — mirrors sendWebhook but for captions. */
 function sendCaptionWebhook(num) {
   if (WEBHOOK_URL.indexOf('YOUR_NGROK_ID') !== -1) {
@@ -461,17 +527,11 @@ function sendCaptionWebhook(num) {
     followRedirects:    true,
     headers: { 'ngrok-skip-browser-warning': 'true' }
   };
-  try {
-    const response = UrlFetchApp.fetch(url, options);
-    const code = response.getResponseCode();
-    if (code === 200) return 'ok';
-    Logger.log('Caption webhook error #' + num + ' — HTTP ' + code + ': ' +
-      response.getContentText());
-    return 'error_' + code;
-  } catch (error) {
-    Logger.log('Caption webhook failed for #' + num + ': ' + error.toString());
-    return 'exception';
-  }
+  const r = sdTunnelFetch_('Caption webhook #' + num, url, options);
+  if (r.ok) return 'ok';
+  Logger.log('Caption webhook error #' + num + ' — ' + sdBridgeOutcome_(r) +
+    ': ' + String(r.text).slice(0, 200));
+  return sdBridgeOutcome_(r);
 }
 
 function sendWebhook(rowIndex) {
@@ -491,17 +551,11 @@ function sendWebhook(rowIndex) {
     followRedirects:    true,
     headers: { 'ngrok-skip-browser-warning': 'true' }
   };
-  try {
-    const response = UrlFetchApp.fetch(WEBHOOK_URL, options);
-    const code = response.getResponseCode();
-    if (code === 200) return 'ok';
-    Logger.log('Webhook error row ' + rowIndex + ' — HTTP ' + code + ': ' +
-      response.getContentText());
-    return 'error_' + code;
-  } catch (error) {
-    Logger.log('Webhook request failed for row ' + rowIndex + ': ' + error.toString());
-    return 'exception';
-  }
+  const r = sdTunnelFetch_('Webhook row ' + rowIndex, WEBHOOK_URL, options);
+  if (r.ok) return 'ok';
+  Logger.log('Webhook error row ' + rowIndex + ' — ' + sdBridgeOutcome_(r) +
+    ': ' + String(r.text).slice(0, 200));
+  return sdBridgeOutcome_(r);
 }
 
 function testWebhook() {

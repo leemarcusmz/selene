@@ -4,7 +4,7 @@
  * (it reuses that file's WEBHOOK_URL / WEBHOOK_SECRET globals) and owns the
  * project's single doGet router (?view=status, ?view=review).
  *
- * VERSION 4.1 — 2026-09-14          (page footer shows PICKER_BUILD)
+ * VERSION 4.2 — 2026-09-30          (page footer shows PICKER_BUILD)
  *
  * VERSION vs PICKER_BUILD: VERSION is the feature line, maintained here with
  * its changelog; PICKER_BUILD (below) is stamped on every paste, however
@@ -28,6 +28,14 @@
  *     the Mac and emails the invite to TEAMMATE_EMAILS.
  *
  * ── CHANGELOG ────────────────────────────────────────────────────────────
+ * v4.2 (2026-09-30): RETRY WITH BACKOFF on the three tunnel relays
+ *   (/select pick submission, /research, /screen) via sdTunnelFetch_() in
+ *   trigger.gs v3.4 (Code.gs) — Runner Hub p8c. A tunnel mid-restart used to
+ *   cost the relay its one shot; the 15-min tick re-pokes research/screen
+ *   but a pick submission was PENDING until someone re-ran it. Now 3 attempts
+ *   (2 s, 6 s) on exception / ngrok-edge 404 / 429 / 5xx, no retry on 401.
+ *   relayResult_() reads the result object. REQUIRES Code.gs v3.4 pasted
+ *   first: without sdTunnelFetch_ the whole project fails to parse.
  * v4.1  2026-09-14  Invite email rewritten to the Weekly Action format:
  *   subject '[SELENE DREAMS] Weekly Action - Content Picker', and a body
  *   carrying Date, Flow Hub, and a Weekly Brief that names where this
@@ -111,7 +119,7 @@ var TEAMMATE_EMAILS = [
 // Bumped whenever the picker page changes. Shown in the page footer so the
 // live deployment can always be identified without guessing which paste
 // made it in — Apps Script's own version numbers are just a counter.
-var PICKER_BUILD = '2026-09-14.a';
+var PICKER_BUILD = '2026-09-30.a';
 
 var PICKER_REPO = 'leemarcusmz/selene-ig-memory';
 var PICKER_BRANCH = 'main';
@@ -481,19 +489,16 @@ function submitPicks(name, week, picks) {
     var payload = { secret: WEBHOOK_SECRET, week: week, picker: name,
                     picks: payloadPicks };
 
-    var status = 'PENDING — Mac offline; ask Claude to run the pending pick';
-    try {
-      var resp = UrlFetchApp.fetch(WEBHOOK_URL.replace('/webhook', '/select'), {
+    var status = 'PENDING — runner offline; ask Claude to run the pending pick';
+    var resp = sdTunnelFetch_('Pick submission ' + week,
+      WEBHOOK_URL.replace('/webhook', '/select'), {
         method: 'post', contentType: 'application/json',
         payload: JSON.stringify(payload), muteHttpExceptions: true,
         followRedirects: true,
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
-      if (resp.getResponseCode() === 200) status = 'Prompts generating…';
-      else Logger.log(relayResult_('Pick submission', week, resp));
-    } catch (e) {
-      Logger.log('Pick submission relay THREW for week ' + week + ': ' + e);
-    }
+    if (resp.ok) status = 'Prompts generating…';
+    else Logger.log(relayResult_('Pick submission', week, resp));
 
     picksSheet_().appendRow([
       week, name, labels.join(', '), slidesStr.join(' · ') || '—',
@@ -577,12 +582,12 @@ function pingMac() {
   }
 }
 
-function relayResult_(what, week, resp) {
-  var code = resp.getResponseCode();
-  if (code === 200) return what + ' relay OK (200) for week ' + week;
-  return what + ' relay FAILED for week ' + week + ' — HTTP ' + code +
-         ' from ' + WEBHOOK_URL + ' — body: ' +
-         String(resp.getContentText() || '').slice(0, 200);
+function relayResult_(what, week, r) {
+  // r = result of sdTunnelFetch_ (v4.2): { ok, code, text, attempts, threw }
+  if (r.ok) return what + ' relay OK (200' +
+    (r.attempts > 1 ? ', attempt ' + r.attempts : '') + ') for week ' + week;
+  return what + ' relay FAILED for week ' + week + ' — ' + sdBridgeOutcome_(r) +
+         ' from ' + WEBHOOK_URL + ' — body: ' + String(r.text || '').slice(0, 200);
 }
 
 function requestResearchIfNeeded_() {
@@ -599,18 +604,14 @@ function requestResearchIfNeeded_() {
       '/contents/candidates/candidates-' + week + '.json?ref=' + PICKER_BRANCH);
     return;   // already published
   } catch (e) { /* not yet — poke the Mac */ }
-  try {
-    var rResp = UrlFetchApp.fetch(WEBHOOK_URL.replace('/webhook', '/research'), {
+  var rResp = sdTunnelFetch_('Research ' + week,
+    WEBHOOK_URL.replace('/webhook', '/research'), {
       method: 'post', contentType: 'application/json',
       payload: JSON.stringify({ secret: WEBHOOK_SECRET }),
       muteHttpExceptions: true, followRedirects: true,
       headers: { 'ngrok-skip-browser-warning': 'true' }
     });
-    Logger.log(relayResult_('Research', week, rResp));
-  } catch (e) {
-    Logger.log('Research relay THREW (no response at all) for week ' +
-               week + ': ' + e);
-  }
+  Logger.log(relayResult_('Research', week, rResp));
 }
 
 function requestScreeningIfNeeded_() {
@@ -630,18 +631,14 @@ function requestScreeningIfNeeded_() {
       '/contents/' + SHORTLIST_DIR + '/shortlist-' + week + '.json?ref=' + PICKER_BRANCH);
     return;   // exists — screening done
   } catch (e) { /* not yet — fall through */ }
-  try {
-    var sResp = UrlFetchApp.fetch(WEBHOOK_URL.replace('/webhook', '/screen'), {
+  var sResp = sdTunnelFetch_('Screening ' + week,
+    WEBHOOK_URL.replace('/webhook', '/screen'), {
       method: 'post', contentType: 'application/json',
       payload: JSON.stringify({ week: week, secret: WEBHOOK_SECRET }),
       muteHttpExceptions: true, followRedirects: true,
       headers: { 'ngrok-skip-browser-warning': 'true' }
     });
-    Logger.log(relayResult_('Screening', week, sResp));
-  } catch (e) {
-    Logger.log('Screening relay THREW (no response at all) for week ' +
-               week + ': ' + e);
-  }
+  Logger.log(relayResult_('Screening', week, sResp));
 }
 
 

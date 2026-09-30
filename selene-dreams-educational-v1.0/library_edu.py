@@ -1,7 +1,16 @@
 # =============================================================================
 # library_edu.py — Image Library: Drive indexer + reuse decisions
-# VERSION 2.2 — 2026-09-11
+# VERSION 2.3 — 2026-09-30
 # CHANGELOG
+#   2.3  2026-09-30  MISSING FOLDERS ARE AN ERROR (Runner Hub p8d). A Sources
+#                    row or LIBRARY_ROOTS entry that does not resolve on Drive
+#                    used to come back inside an "indexed N new images; folders
+#                    not found: ..." string, which the tick logged as a success
+#                    - 14 folders "not found" every 15 min for weeks, ok:true
+#                    throughout. index_library() still indexes everything it
+#                    CAN reach and marks Sources, then raises
+#                    LibraryFoldersMissing (message unchanged) so edu_server can
+#                    answer ok:false / HTTP 500 and the heartbeat goes red.
 #   2.2  2026-09-11  NEVER INDEX OUR OWN OUTPUT. Walking 03. Generated Images
 #                    swept up the educational lane's rendered slides (text baked
 #                    in), strips and contact sheets - 68 rows that could have
@@ -150,6 +159,14 @@ def walk_images(folder_id, prefix=""):
         page = res.get("nextPageToken")
         if not page: break
 
+class LibraryFoldersMissing(RuntimeError):
+    """Raised AFTER the reachable roots were indexed: the work is done, the
+    configuration is wrong, and the tick must not report success."""
+    def __init__(self, msg, missing):
+        super().__init__(msg)
+        self.missing = list(missing)
+
+
 def index_library(limit=None):
     """Walk every library root (config + Sources tab) and append unknown
     fingerprints. Each new row records its Drive folder and inherits
@@ -200,6 +217,7 @@ def index_library(limit=None):
     msg = f"indexed {added} new images"
     if missing:
         msg += f"; folders not found on Drive: {', '.join(missing)}"
+        raise LibraryFoldersMissing(msg, missing)
     return msg
 
 def library_rows():
