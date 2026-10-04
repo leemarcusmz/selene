@@ -118,54 +118,82 @@ def _write_log(stage, prompt, proc=None, note=""):
     except Exception:
         return None
 
+import anthropic
 
-def invoke_claude(prompt, workdir, timeout=600, stage=None,
-                  model=None, effort=None):
-    """Run the Claude Code CLI headlessly. Returns (ok, message).
-
-    Every invocation writes a transcript to _logs/ so a run that fails
-    silently can still be diagnosed afterwards.
-    """
-    claude_bin = shutil.which("claude")
-    if not claude_bin:
-        return False, ("claude CLI not found on PATH. Install Claude Code "
-                       "(https://claude.com/claude-code) and log in, or ask "
-                       "Claude in a Selene chat to run this instead.")
+def invoke_claude(prompt, workdir=None, timeout=600, stage=None, model=None, effort=None):
+    """Calls the Anthropic API directly using the Python SDK and API key."""
     if stage and (model is None and effort is None):
         model, effort = model_for(stage)
+    
+    if not model:
+        model = "claude-3-5-sonnet-20241022"
 
-    args = [claude_bin, "-p", prompt, "--dangerously-skip-permissions"]
-    if model:
-        args += ["--model", model]
-    if effort:
-        args += ["--effort", effort]
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return False, "Error: ANTHROPIC_API_KEY not found in environment."
 
     try:
-        proc = subprocess.run(args, cwd=workdir, capture_output=True,
-                              text=True, timeout=timeout)
-        logpath = _write_log(stage, prompt, proc)
-        if proc.returncode != 0:
-            tail = (proc.stderr or proc.stdout or "").strip()[-400:]
-            # An older CLI won't know --effort/--model; retry without them
-            # rather than failing the whole run over a flag.
-            if ("--effort" in tail or "--model" in tail or
-                    "unknown option" in tail.lower()) and (model or effort):
-                log("  NOTE: this CLI rejected --model/--effort — retrying "
-                    "with defaults. Update Claude Code to use model routing.")
-                return invoke_claude(prompt, workdir, timeout=timeout,
-                                     model=None, effort=None)
-            return False, (f"claude CLI exited {proc.returncode}: {tail}"
-                           + (f" · transcript: {logpath}" if logpath else ""))
-        if logpath:
-            log(f"  transcript: {logpath}")
-        return True, "ok"
-    except subprocess.TimeoutExpired:
-        _write_log(stage, prompt, note=f"TIMED OUT after {timeout}s")
-        return False, (f"claude CLI timed out after {timeout}s — the run was "
-                       f"killed mid-work; see _logs/")
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model=model,
+            max_tokens=8192,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        output_text = response.content[0].text
+        _write_log(stage, prompt, note=f"Success (API model: {model})")
+        return True, output_text
     except Exception as e:
-        _write_log(stage, prompt, note=f"EXCEPTION: {e}")
-        return False, f"claude CLI failed: {e}"
+        err_msg = str(e)
+        _write_log(stage, prompt, note=f"API Error: {err_msg}")
+        return False, f"Anthropic API Error: {err_msg}"
+
+# def invoke_claude(prompt, workdir, timeout=600, stage=None,
+#                   model=None, effort=None):
+#     """Run the Claude Code CLI headlessly. Returns (ok, message).
+
+#     Every invocation writes a transcript to _logs/ so a run that fails
+#     silently can still be diagnosed afterwards.
+#     """
+#     claude_bin = shutil.which("claude")
+#     if not claude_bin:
+#         return False, ("claude CLI not found on PATH. Install Claude Code "
+#                        "(https://claude.com/claude-code) and log in, or ask "
+#                        "Claude in a Selene chat to run this instead.")
+#     if stage and (model is None and effort is None):
+#         model, effort = model_for(stage)
+
+#     args = [claude_bin, "-p", prompt, "--dangerously-skip-permissions"]
+#     if model:
+#         args += ["--model", model]
+#     if effort:
+#         args += ["--effort", effort]
+
+#     try:
+#         proc = subprocess.run(args, cwd=workdir, capture_output=True,
+#                               text=True, timeout=timeout)
+#         logpath = _write_log(stage, prompt, proc)
+#         if proc.returncode != 0:
+#             tail = (proc.stderr or proc.stdout or "").strip()[-400:]
+#             # An older CLI won't know --effort/--model; retry without them
+#             # rather than failing the whole run over a flag.
+#             if ("--effort" in tail or "--model" in tail or
+#                     "unknown option" in tail.lower()) and (model or effort):
+#                 log("  NOTE: this CLI rejected --model/--effort — retrying "
+#                     "with defaults. Update Claude Code to use model routing.")
+#                 return invoke_claude(prompt, workdir, timeout=timeout,
+#                                      model=None, effort=None)
+#             return False, (f"claude CLI exited {proc.returncode}: {tail}"
+#                            + (f" · transcript: {logpath}" if logpath else ""))
+#         if logpath:
+#             log(f"  transcript: {logpath}")
+#         return True, "ok"
+#     except subprocess.TimeoutExpired:
+#         _write_log(stage, prompt, note=f"TIMED OUT after {timeout}s")
+#         return False, (f"claude CLI timed out after {timeout}s — the run was "
+#                        f"killed mid-work; see _logs/")
+#     except Exception as e:
+#         _write_log(stage, prompt, note=f"EXCEPTION: {e}")
+#         return False, f"claude CLI failed: {e}"
 
 
 # =============================================================================
